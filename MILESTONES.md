@@ -2,6 +2,12 @@
 
 `plan.md`의 구현 순서(§구현 순서)와 검증(§Verification)을 단계별 마일스톤으로 분해한 문서. 각 마일스톤은 독립적으로 컴파일·검증 가능한 단위로 끊었고, 의존성 순서대로 나열했다. 단일 진실 공급원은 여전히 `plan.md` — 클래스 시그니처/설계 결정이 바뀌면 `plan.md`를 먼저 고친다.
 
+> 최신 수렴본 `plan_claude3.md`의 보정 항목 **G1~G4**를 반영했다. 해당 작업에는 `(G#)` 태그를 붙였다.
+> - **G1** `BenchmarkSummaryPrinter` — 풀이 간 비교/순위 요약(M3 구현 + M6 호출).
+> - **G2** 실행 시간 소수 ms 정밀도(M3).
+> - **G3** `JavaJarSolution` 스왑→로드→타이머→invoke 순서(M4).
+> - **G4** `JudgeEngine.shutdown()` awaitTermination→shutdownNow 안전망(M5).
+
 > 진행 규칙: 각 마일스톤 완료 시 **완료 기준(Exit Criteria)** 을 모두 충족해야 다음으로 넘어간다. 모든 작업·명령·출력은 `ai_rec.md`에 시간순 누적 기록한다.
 
 ---
@@ -70,13 +76,16 @@
 - `result/TestCaseResult.java` (불변): `testCaseIndex`, `passed`, `expectedOutput`, `actualOutput`, `executionTime`, `errorMessage`.
 - `result/BenchmarkResult.java` (불변): `solutionName`, `allPassed`, `totalExecutionTime`, `List<TestCaseResult>`.
 - `result/ResultLogger.java` «interface»: `void log(BenchmarkResult)`.
-- `result/ConsoleResultLogger.java`: 사람이 읽는 표 출력(NFR-06).
-- `result/ResultFormatter.java` «interface» + `result/CsvResultFormatter.java`: CSV 행 생성.
+- `result/ConsoleResultLogger.java`: 사람이 읽는 표 출력(NFR-06). **(G2) 총 시간은 `toNanos()/1_000_000.0` 소수 ms로 포맷.**
+- `result/ResultFormatter.java` «interface» + `result/CsvResultFormatter.java`: CSV 행 생성. **(G2) `totalExecutionTimeMs` 소수 ms.**
 - `result/CsvResultLogger.java`: `formatter` DI, 파일 append, `synchronized`, 헤더 1회 기록.
+- **(G1) `result/BenchmarkSummaryPrinter.java`** (신규): `void printComparison(List<BenchmarkResult>, PrintStream)`. 전 풀이를 비교 표로 출력 — 정렬 통과 우선 → 총 시간 오름차순, 최속 정답 풀이 강조. 결과 객체만 읽는 순수 함수(스레드 안전). PDF 1.3 "여러 풀이 비교" 직접 충족.
 
 **완료 기준**
 - `result` 패키지 전체 컴파일 성공.
 - 데이터 클래스 불변 + 방어적 복사 준수.
+- **(G2) 마이크로초대 풀이의 시간이 0이 아닌 소수 ms로 표시.**
+- **(G1) `BenchmarkSummaryPrinter`가 통과 우선 → 총 시간 오름차순 정렬, 최속 정답 강조.**
 
 **의존성:** M1 (Duration 등 기본 타입만; 도메인과 독립적이라 M2와 병행 가능).
 
@@ -90,12 +99,13 @@
 - `solution/ExecutionResult.java` «Data Class» (불변): `stdout`, `stderr`, `exitCode`, `executionTime`, `timedOut` + `isSuccess()`.
 - `solution/Solution.java` «interface»: `String getName()`, `ExecutionResult execute(String input)`.
 - `solution/ExternalProcessSolution.java`: `ProcessBuilder` 실행, stdin 주입, stdout/stderr 캡처, `waitFor(timeout)` + `destroyForcibly()`.
-- `solution/JavaJarSolution.java`: `URLClassLoader`로 `.class`/`.jar` 로드 → `main(String[])` 리플렉션 호출. **`System.in/out/err` 교체 구간을 `static` 락으로 직렬화**(설계 노트 1). 타임아웃은 데몬 스레드 + `Future.get(timeout)` best-effort(설계 노트 2).
+- `solution/JavaJarSolution.java`: `URLClassLoader`로 `.class`/`.jar` 로드 → `main(String[])` 리플렉션 호출. **`System.in/out/err` 교체 구간을 `static` 락으로 직렬화**(설계 노트 1). 타임아웃은 데몬 스레드 + `Future.get(timeout)` best-effort(설계 노트 2). **(G3) 실행 순서를 스트림 스왑 → 클래스 로드(static init 출력도 캡처, 타이머 밖) → 타이머 시작 → `main` invoke로 고정.** `finally`에서 스트림 복구 → helper executor `shutdownNow()` → `URLClassLoader.close()`.
 
 **완료 기준**
 - `solution` 패키지 컴파일 성공.
 - `ExternalProcessSolution`: 타임아웃 초과 프로세스 `destroyForcibly`로 확실히 종료.
 - `JavaJarSolution`: 스트림 교체가 `static` 락으로 보호됨(병렬 출력 섞임 방지).
+- **(G3) 대상 클래스 static initializer의 stdout이 캡처됨(스왑 후 로드).**
 
 **의존성:** M1 (도메인 타입 참조 가능).
 
@@ -107,12 +117,13 @@
 
 **작업**
 - `engine/GradingTask.java` `implements Callable<BenchmarkResult>`: 필드 `problem`/`solution`/`comparator`. `call()`에서 각 `TestCase` 실행 → 판정 → `TestCaseResult` 수집 → `BenchmarkResult`. **케이스 단위 예외 격리**로 `errorMessage` 기록 후 계속 진행(NFR-04).
-- `engine/JudgeEngine.java`: `ExecutorService`(내부 `newFixedThreadPool`) + `ResultLogger` DI. `evaluateAllAsync(...)`, `evaluateAll(...)`(제출 후 **단일 스레드 순차 `logger.log`** — NFR-05), `shutdown()`.
+- `engine/JudgeEngine.java`: `ExecutorService`(내부 `newFixedThreadPool`) + `ResultLogger` DI. `evaluateAllAsync(...)`, `evaluateAll(...)`(제출 후 **단일 스레드 순차 `logger.log`** — NFR-05), `shutdown()`. **(G4) `shutdown()` = `shutdown()` → `awaitTermination(짧게)` → 미종료 시 `shutdownNow()` 안전망**(지연 task가 JVM 종료 막지 않게).
 
 **완료 기준**
 - `engine` 패키지 컴파일 성공.
 - 한 풀이의 예외가 전체 벤치마크를 중단시키지 않음(예외 격리).
 - 로깅이 메인 스레드에서 직렬화됨(결과 섞임 없음).
+- **(G4) `shutdown()`이 미종료 풀을 `shutdownNow()`로 회수.**
 
 **의존성:** M1, M3, M4.
 
@@ -123,7 +134,7 @@
 **목표:** CLI 진입점을 완성하고 데모용 샘플 풀이를 만든다.
 
 **작업**
-- `Main.java`: 인자 `<problemFile> <solution...>`. 확장자로 타입 판별(`.class`/`.jar` → `JavaJarSolution`, 그 외 → `ExternalProcessSolution`). 문제 로드 → `JudgeEngine`(콘솔+CSV 로거) → `evaluateAll` → 콘솔 출력 + `reports/result.csv` → `shutdown`.
+- `Main.java`: 인자 `<problemFile> <solution...>`. 확장자로 타입 판별(`.class`/`.jar` → `JavaJarSolution`, 그 외 → `ExternalProcessSolution`). 문제 로드 → `JudgeEngine`(콘솔+CSV 로거) → `evaluateAll` → 콘솔 출력 + `reports/result.csv` → **(G1) `BenchmarkSummaryPrinter.printComparison(results, System.out)` 1회 호출** → `finally`에서 `shutdown`.
 - 샘플 Java 풀이: `CorrectSolution.java`(정답), `WrongSolution.java`(오답), `TimeoutSolution.java`(무한루프).
 - 샘플 Python 풀이: `solutions/python/correct_solution.py`.
 - `build.ps1` 3단계 완성.
@@ -131,6 +142,7 @@
 **완료 기준**
 - 전체 `src` + 샘플 Java 풀이 컴파일 성공(에러 0).
 - `Main`이 4개 풀이 인자를 받아 실행 가능(다음 마일스톤에서 동작 검증).
+- **(G1) `Main`이 `evaluateAll` 후 비교 요약을 출력.**
 
 **의존성:** M5.
 
@@ -156,7 +168,9 @@
    - `TimeoutSolution` → 타임아웃 표시, 프로그램 계속 진행(NFR-04).
    - Python 풀이 → 외부 프로세스 경로로 정답 처리(다형성 검증).
 4. `reports/result.csv` 생성 확인: 헤더 + 풀이별 행(시간 ms·통과수·실패케이스·에러).
-5. (선택) 비교기를 `WhitespaceNormalizingComparator`로 교체 → 엔진 수정 없이 채점 기준 교체됨 확인(NFR-03).
+5. **(G1) 비교 요약 표 확인: 통과 우선 → 총 시간 오름차순 정렬, 최속 정답 풀이 강조가 정확한지.**
+6. **(G2) 빠른 풀이 시간이 0ms가 아닌 소수 ms로 표시되는지 확인.**
+7. (선택) 비교기를 `WhitespaceNormalizingComparator`로 교체 → 엔진 수정 없이 채점 기준 교체됨 확인(NFR-03).
 
 **검증 결과·실행 명령·출력은 모두 `ai_rec.md`에 기록.**
 
@@ -179,8 +193,8 @@ M0 ──> M1 ──┬──> M2
 | M0 | 디렉토리·README·build.ps1·ai_rec.md | 구조 일치 |
 | M1 | domain + compare | 컴파일·불변성 |
 | M2 | loader + 샘플 문제 | 파싱 스모크 |
-| M3 | result(데이터+로거+포매터) | 컴파일·불변성 |
-| M4 | solution(인터페이스+2구현) | 타임아웃·스트림 락 |
-| M5 | engine(GradingTask+JudgeEngine) | 예외 격리·순차 로깅 |
-| M6 | Main + 샘플 풀이 + build.ps1 | 전체 컴파일 |
-| M7 | E2E 실행 | 4풀이 시나리오 + CSV |
+| M3 | result(데이터+로거+포매터+**SummaryPrinter G1**) | 컴파일·불변성·소수 ms(G2)·순위 정렬(G1) |
+| M4 | solution(인터페이스+2구현) | 타임아웃·스트림 락·스왑→로드 순서(G3) |
+| M5 | engine(GradingTask+JudgeEngine) | 예외 격리·순차 로깅·shutdown 안전망(G4) |
+| M6 | Main + 샘플 풀이 + build.ps1 | 전체 컴파일·요약 출력(G1) |
+| M7 | E2E 실행 | 4풀이 시나리오 + CSV + 비교표(G1) + 정밀도(G2) |

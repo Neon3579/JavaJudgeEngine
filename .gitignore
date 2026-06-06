@@ -1,0 +1,17 @@
+# 빌드 산출물 (build.ps1가 재생성)
+out/
+out_solutions/
+
+# 실행 결과물
+reports/
+*.csv
+
+# 컴파일된 클래스
+*.class
+*.jar
+
+# OS / 에디터
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/

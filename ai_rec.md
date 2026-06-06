@@ -245,3 +245,62 @@
 ### 현재 상태
 - 단계별 실행 문서 `MILESTONES.md` 추가(M0~M7).
 - 코드 구현은 사용자 추가 지시 대기 중.
+
+### 사용자 프롬프트 #10
+> 반영해
+
+### AI 행동
+5. `plan_claude3.md` 정독해 G1~G4 정확 내용 확보. `MILESTONES.md`에 타깃 반영:
+   - **G1** `BenchmarkSummaryPrinter`(풀이 간 비교/순위 — 통과 우선→총 시간 오름차순, 최속 정답 강조) → M3 구현 작업·완료 기준 + M6 `Main` 호출 + M7 검증 추가.
+   - **G2** 실행 시간 소수 ms(`toNanos()/1_000_000.0`) → M3 Console/CSV formatter + 완료 기준 + M7 검증.
+   - **G3** `JavaJarSolution` 스왑→로드(static init 캡처)→타이머→invoke 순서 → M4 작업·완료 기준.
+   - **G4** `JudgeEngine.shutdown()` awaitTermination→shutdownNow 안전망 → M5 작업·완료 기준.
+   - 문서 상단에 G1~G4 반영 안내, 각 작업에 `(G#)` 태그, 하단 요약 표 갱신.
+   - (G5는 구현 후 CLAUDE.md 갱신 항목 — 코드 미착수라 보류.)
+
+### 현재 상태
+- `MILESTONES.md` = `plan.md` 9단계 골격 + `plan_claude3.md` G1~G4 반영본.
+- 코드 구현은 사용자 추가 지시 대기 중.
+
+### 사용자 프롬프트 #11
+> 구현계획 즉 plan과 milestone을 단일 html 문서로 최대한 시각자료를 이용해서 시각화해라.
+
+### AI 행동
+6. `frontend-design` 스킬 적용. 단일 파일 `algobench_visual.html` 생성 — 의존성 0, 외부 자원은 Google Fonts(Chakra Petch/IBM Plex Sans KR/JetBrains Mono)만.
+7. 테마: 엔지니어링 블루프린트/콘솔(다크 + 그리드 배경 + grain). 시각 자료:
+   - Hero(타이틀·제약 chip) + 통계 strip(5단계/6패키지/8마일스톤/4인터페이스).
+   - 데이터 파이프라인 5단계 플로우(로드→실행→비교→결과수집→리포팅).
+   - 패키지×클래스 맵 6카드 + 인터페이스/Data Class/G 보정 범례.
+   - 다형성 트리 SVG(Solution/OutputComparator/ResultLogger → 구현체).
+   - 문제 파일 포맷 코드블록(구문 강조).
+   - 마일스톤 타임라인 M0~M7(목표·산출물·Exit Criteria·의존성, G1~G4 인라인 태그).
+   - 의존성 DAG SVG(M0→M1→{M2,M3,M4}→M5→M6→M7, 병행 표시).
+   - G1~G4 보정 카드, 비자명 규칙 6노트, E2E 검증 표 + 실행 명령.
+   - IntersectionObserver 스태거 reveal 애니메이션.
+8. 내용 출처: plan.md + MILESTONES.md(G1~G4 반영). 클래스/규칙/검증 시나리오 모두 설계 문서와 일치.
+
+### 현재 상태
+- 시각화 산출물 `algobench_visual.html` 추가(브라우저로 열어 확인).
+- 코드 구현은 사용자 추가 지시 대기 중.
+
+---
+
+## 세션 7 (계속) — 2026-06-06 · M0 구현·실행 (프로젝트 골격)
+
+### 사용자 프롬프트 #12
+> M0 구현 실행해
+
+### AI 행동
+1. 디렉토리 트리 생성: `src/algobench/{domain,loader,solution,compare,engine,result}`, `problems`, `solutions/{java,python}`, `out`, `out_solutions`, `reports`.
+2. 빈 패키지 디렉토리 git 유지용 `.gitkeep` 9개 + `.gitignore`(out/·out_solutions/·reports/·*.class·*.jar·에디터 파일 제외) 생성.
+3. `build.ps1` 작성 — 3단계(엔진 컴파일 → 샘플 Java 풀이 컴파일 → 데모 실행). 산출물 디렉토리 `New-Item -Force` 보장, `-NoRun` 스위치(컴파일만), 소스 없으면 graceful 종료. 상단에 콘솔 UTF-8 설정(`chcp 65001` + `[Console]::OutputEncoding`).
+4. `README.md` 작성 — 목적, Pure Java SE 제약, build.ps1·수동 javac/java 빌드법, ExecutionPolicy 우회, 디렉토리 구조, 문제 포맷, 풀이 제출 규칙(.class/.jar↔외부), 설계 트레이드오프·한계(전역 스트림/타임아웃/인코딩/시간측정/G1 비교 요약), 기록 규칙.
+5. 검증:
+   - `powershell -ExecutionPolicy Bypass -File .\build.ps1` → 소스 없어 1단계서 graceful 종료(정상). (콘솔 한글은 호스트 cp949 캡처 아티팩트 — 파일은 UTF-8 정상.)
+   - 파일 7종(README/build.ps1/.gitignore/ai_rec/plan/MILESTONES/html) 전부 OK.
+   - 패키지 디렉토리 12개 전부 OK.
+   - 툴체인: `javac 25.0.2` 확인.
+
+### 현재 상태
+- **M0(프로젝트 골격) 완료.** Exit Criteria 충족 — 구조 plan.md 일치, README·build.ps1·ai_rec 존재.
+- 다음: M1(도메인 + 비교기 — Problem/TestCase + OutputComparator 3종).

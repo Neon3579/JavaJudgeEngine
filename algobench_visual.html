@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlgoBench · 구현 설계도 & 마일스톤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b10;
+  --bg-2:#0c1118;
+  --panel:#11171f;
+  --panel-2:#151c26;
+  --line:#1f2935;
+  --line-bright:#2c3a4a;
+  --ink:#e7eef6;
+  --muted:#8597a8;
+  --faint:#5a6b7c;
+  --amber:#ffb43a;
+  --amber-dim:#9c6a1f;
+  --cyan:#43e0c4;
+  --cyan-dim:#1f6f63;
+  --violet:#8b8cff;
+  --green:#5fe08a;
+  --red:#ff6b6b;
+  --grad-amber:linear-gradient(135deg,#ffb43a,#ff7a45);
+  --grad-cyan:linear-gradient(135deg,#43e0c4,#3aa0ff);
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --disp:'Chakra Petch',sans-serif;
+  --body:'IBM Plex Sans KR',sans-serif;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--body);
+  font-weight:300;
+  line-height:1.65;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+/* blueprint grid + atmosphere */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-2;
+  background:
+    radial-gradient(900px 600px at 78% -5%, rgba(255,180,58,.10), transparent 60%),
+    radial-gradient(800px 700px at 8% 12%, rgba(67,224,196,.08), transparent 55%),
+    linear-gradient(180deg,var(--bg),var(--bg-2));
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    linear-gradient(var(--line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:44px 44px;
+  -webkit-mask-image:radial-gradient(circle at 50% 30%, #000 0%, transparent 85%);
+          mask-image:radial-gradient(circle at 50% 30%, #000 0%, transparent 85%);
+  opacity:.5;
+}
+.grain{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.04;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+section{padding:90px 0;position:relative}
+
+/* ---- mono labels ---- */
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--amber);font-weight:500}
+.tag.cy{color:var(--cyan)}
+.kicker{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.kicker .ln{height:1px;flex:0 0 46px;background:linear-gradient(90deg,var(--amber),transparent)}
+h2{font-family:var(--disp);font-weight:700;font-size:clamp(28px,4.4vw,46px);line-height:1.05;letter-spacing:-.01em}
+h2 .dim{color:var(--faint);font-weight:400}
+.lead{color:var(--muted);max-width:680px;margin-top:16px;font-size:15.5px}
+
+/* ============ HERO ============ */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding-top:80px}
+.hero .topbar{position:absolute;top:30px;left:0;right:0;display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase}
+.hero .topbar b{color:var(--amber);font-weight:500}
+.hero h1{font-family:var(--disp);font-weight:700;font-size:clamp(56px,13vw,168px);line-height:.86;letter-spacing:-.03em;
+  background:linear-gradient(180deg,#fff 30%,#9fb1c2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero h1 .b{display:block;background:var(--grad-amber);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{font-family:var(--mono);font-size:clamp(13px,1.9vw,18px);color:var(--cyan);letter-spacing:.06em;margin-top:26px}
+.hero .desc{max-width:620px;color:var(--muted);margin-top:20px;font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:34px}
+.chip{font-family:var(--mono);font-size:12px;padding:8px 14px;border:1px solid var(--line-bright);border-radius:999px;
+  color:var(--ink);background:rgba(255,255,255,.02);display:flex;align-items:center;gap:8px}
+.chip i{width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+.chip.cy i{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.scrollcue{margin-top:60px;font-family:var(--mono);font-size:11px;letter-spacing:.25em;color:var(--faint);text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.scrollcue .arr{width:1px;height:30px;background:linear-gradient(var(--amber),transparent);animation:drop 1.8s ease-in-out infinite}
+@keyframes drop{0%,100%{transform:scaleY(.4);opacity:.4}50%{transform:scaleY(1);opacity:1}}
+
+/* ============ stat strip ============ */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--panel)}
+.stats .s{padding:26px 24px;border-right:1px solid var(--line)}
+.stats .s:last-child{border-right:none}
+.stats .n{font-family:var(--disp);font-weight:700;font-size:40px;color:var(--amber);line-height:1}
+.stats .n.cy{color:var(--cyan)}
+.stats .l{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-top:8px}
+
+/* ============ PIPELINE ============ */
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:46px;position:relative}
+.stage{position:relative;padding:0 8px}
+.stage .node{border:1px solid var(--line-bright);border-radius:12px;background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  padding:22px 16px;text-align:center;height:100%;transition:.3s}
+.stage:hover .node{border-color:var(--amber);transform:translateY(-6px);box-shadow:0 18px 40px -20px rgba(255,180,58,.5)}
+.stage .idx{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.stage .ic{font-size:26px;margin:8px 0 6px}
+.stage .nm{font-family:var(--disp);font-weight:600;font-size:16px}
+.stage .pkg{font-family:var(--mono);font-size:11px;color:var(--cyan);margin-top:4px}
+.stage .arrow{position:absolute;right:-9px;top:46%;z-index:3;color:var(--amber);font-family:var(--mono);font-size:18px}
+.stage:last-child .arrow{display:none}
+
+/* ============ package cards ============ */
+.grid-pkg{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+.pcard{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden;transition:.3s;position:relative}
+.pcard:hover{border-color:var(--line-bright);transform:translateY(-4px)}
+.pcard .hd{padding:18px 20px;border-bottom:1px dashed var(--line-bright);display:flex;align-items:center;justify-content:space-between}
+.pcard .hd .pn{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--amber)}
+.pcard .hd .pn::before{content:"› ";color:var(--faint)}
+.pcard .hd .ct{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.pcard .bd{padding:14px 20px 20px}
+.cls{display:flex;align-items:center;gap:9px;padding:7px 0;font-family:var(--mono);font-size:13px;border-bottom:1px solid rgba(255,255,255,.03)}
+.cls:last-child{border-bottom:none}
+.cls .dot{width:7px;height:7px;border-radius:2px;background:var(--violet);flex:0 0 auto}
+.cls.iface .dot{background:transparent;border:1.5px solid var(--cyan);border-radius:50%}
+.cls.data .dot{background:var(--green)}
+.cls .nm{color:var(--ink)}
+.cls .bd-note{color:var(--faint);font-size:11px;margin-left:auto}
+.badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;padding:2px 7px;border-radius:5px;text-transform:uppercase}
+.b-if{color:var(--cyan);border:1px solid var(--cyan-dim);background:rgba(67,224,196,.07)}
+.b-g{color:var(--amber);border:1px solid var(--amber-dim);background:rgba(255,180,58,.08)}
+.legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:24px;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend .dot{width:8px;height:8px;border-radius:2px}
+
+/* ============ polymorphism diagram ============ */
+.poly{margin-top:44px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);padding:34px 28px}
+.poly h3{font-family:var(--mono);font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.15em;margin-bottom:8px}
+.tree{display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;margin-top:24px}
+.branch{display:flex;flex-direction:column;align-items:center;gap:0}
+.iface-box{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--cyan);border:1.5px solid var(--cyan-dim);
+  background:rgba(67,224,196,.06);border-radius:10px;padding:12px 18px;text-align:center;position:relative}
+.iface-box small{display:block;font-weight:400;font-size:10px;color:var(--faint);letter-spacing:.1em;margin-top:2px}
+.connector{width:1px;height:26px;background:linear-gradient(var(--cyan-dim),var(--line))}
+.impls{display:flex;flex-direction:column;gap:8px;width:100%}
+.impl{font-family:var(--mono);font-size:12px;color:var(--ink);border:1px solid var(--line-bright);border-radius:8px;
+  padding:9px 12px;text-align:center;background:var(--panel-2);transition:.25s}
+.impl:hover{border-color:var(--amber);color:var(--amber)}
+.impl .t{font-size:10px;color:var(--faint);display:block}
+
+/* ============ format block ============ */
+.code{font-family:var(--mono);font-size:13px;background:#070a0e;border:1px solid var(--line);border-radius:var(--r);
+  padding:0;overflow:hidden;margin-top:30px}
+.code .top{display:flex;gap:7px;padding:13px 16px;border-bottom:1px solid var(--line);align-items:center}
+.code .top i{width:11px;height:11px;border-radius:50%;background:var(--line-bright)}
+.code .top i:nth-child(1){background:#ff5f56}.code .top i:nth-child(2){background:#ffbd2e}.code .top i:nth-child(3){background:#27c93f}
+.code .top .fn{margin-left:10px;font-size:11px;color:var(--faint)}
+.code pre{padding:20px 22px;overflow-x:auto;line-height:1.85}
+.code .k{color:var(--amber)}.code .v{color:var(--ink)}.code .c{color:var(--faint)}.code .s{color:var(--cyan)}.code .h{color:var(--violet)}
+
+/* ============ MILESTONES timeline ============ */
+.rail{position:relative;margin-top:50px;padding-left:0}
+.ms{display:grid;grid-template-columns:96px 1fr;gap:0;position:relative}
+.ms .spine{position:relative;display:flex;flex-direction:column;align-items:center}
+.ms .spine .ball{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--line-bright);background:var(--bg-2);
+  display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:15px;color:var(--amber);z-index:2;transition:.3s}
+.ms .spine .stem{width:2px;flex:1;background:linear-gradient(var(--line-bright),var(--line));margin-top:-2px}
+.ms:last-child .spine .stem{display:none}
+.ms:hover .spine .ball{border-color:var(--amber);background:rgba(255,180,58,.1);box-shadow:0 0 22px -4px var(--amber)}
+.ms .card{margin:0 0 30px 26px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);padding:22px 26px;transition:.3s;flex:1}
+.ms:hover .card{border-color:var(--line-bright);transform:translateX(4px)}
+.ms .card .mh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.ms .card .mh h3{font-family:var(--disp);font-weight:600;font-size:21px}
+.ms .card .mh .en{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.1em}
+.ms .card .goal{color:var(--muted);font-size:14px;margin:10px 0 16px}
+.ms .deliv{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.ms .deliv .d{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:6px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink)}
+.ms .deliv .d.if{color:var(--cyan)}
+.ms .deliv .d.g{color:var(--amber);border-color:var(--amber-dim)}
+.exit{border-top:1px dashed var(--line-bright);padding-top:13px;margin-top:6px}
+.exit .xl{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);margin-bottom:9px}
+.exit ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+.exit li{font-size:13px;color:var(--muted);padding-left:22px;position:relative}
+.exit li::before{content:"✓";position:absolute;left:0;color:var(--green);font-family:var(--mono);font-size:12px}
+.dep{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:12px}
+.dep b{color:var(--amber);font-weight:500}
+
+/* ============ dependency graph ============ */
+.depgraph{margin-top:44px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);padding:30px;overflow-x:auto}
+.depgraph svg{display:block;min-width:760px;margin:0 auto}
+
+/* ============ design notes ============ */
+.notes{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:44px}
+.note{border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:10px;background:var(--panel);padding:22px 24px;transition:.3s}
+.note:hover{transform:translateY(-3px);border-left-color:var(--cyan)}
+.note .nn{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.1em;margin-bottom:9px}
+.note h4{font-family:var(--disp);font-weight:600;font-size:16px;margin-bottom:8px}
+.note p{font-size:13.5px;color:var(--muted)}
+.note code{font-family:var(--mono);font-size:12px;color:var(--cyan);background:rgba(67,224,196,.07);padding:1px 5px;border-radius:4px}
+
+/* ============ G refinements ============ */
+.gs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:34px}
+.gcard{border:1px solid var(--amber-dim);border-radius:12px;background:linear-gradient(180deg,rgba(255,180,58,.06),transparent);padding:20px;transition:.3s}
+.gcard:hover{transform:translateY(-4px);box-shadow:0 16px 36px -22px var(--amber)}
+.gcard .gid{font-family:var(--disp);font-weight:700;font-size:28px;color:var(--amber)}
+.gcard .gt{font-family:var(--mono);font-size:12px;color:var(--ink);margin:6px 0 8px;font-weight:500}
+.gcard p{font-size:12.5px;color:var(--muted)}
+.gcard .gm{font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:10px;letter-spacing:.1em}
+
+/* ============ verification table ============ */
+.vtable{margin-top:40px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--panel)}
+.vrow{display:grid;grid-template-columns:1.1fr 1.4fr .8fr;gap:0;border-bottom:1px solid var(--line)}
+.vrow:last-child{border-bottom:none}
+.vrow.head{background:var(--panel-2)}
+.vrow.head div{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.vrow>div{padding:16px 20px;font-size:13.5px;border-right:1px solid var(--line)}
+.vrow>div:last-child{border-right:none}
+.vrow .sol{font-family:var(--mono);color:var(--ink);font-weight:500}
+.vrow .res{color:var(--muted);font-size:13px}
+.pill{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:999px;display:inline-block;font-weight:500}
+.pill.pass{color:var(--green);background:rgba(95,224,138,.1);border:1px solid var(--cyan-dim)}
+.pill.fail{color:var(--red);background:rgba(255,107,107,.1);border:1px solid #6f2f2f}
+.pill.time{color:var(--amber);background:rgba(255,180,58,.1);border:1px solid var(--amber-dim)}
+.pill.poly{color:var(--violet);background:rgba(139,140,255,.1);border:1px solid #3d3f7a}
+
+/* ============ run cmd ============ */
+.runbox{margin-top:36px;border:1px solid var(--line-bright);border-radius:var(--r);background:#070a0e;padding:24px 26px;font-family:var(--mono);font-size:13px;overflow-x:auto}
+.runbox .ln{white-space:pre;color:var(--ink)}
+.runbox .pr{color:var(--cyan)}
+.runbox .fl{color:var(--amber)}
+.runbox .cm{color:var(--faint)}
+
+/* footer */
+footer{padding:60px 0 50px;border-top:1px solid var(--line);margin-top:40px}
+.foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;font-family:var(--mono);font-size:12px;color:var(--faint)}
+.foot b{color:var(--amber);font-weight:500}
+
+/* reveal anim */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+.rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}.rv.d4{transition-delay:.32s}
+
+@media(max-width:880px){
+  .stats,.gs{grid-template-columns:repeat(2,1fr)}
+  .grid-pkg,.notes{grid-template-columns:1fr}
+  .pipe{grid-template-columns:1fr 1fr}
+  .tree{grid-template-columns:1fr}
+  .stage .arrow{display:none}
+  .vrow{grid-template-columns:1fr}
+  .vrow>div{border-right:none;border-bottom:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<!-- ================= HERO ================= -->
+<header class="hero wrap">
+  <div class="topbar">
+    <span>ALGOBENCH <b>// 구현 설계도</b></span>
+    <span>202311516 · <b>권창민</b></span>
+  </div>
+  <h1>Algo<span class="b">Bench</span></h1>
+  <div class="sub">// 로컬 알고리즘 벤치마킹 엔진 · Pure Java SE</div>
+  <p class="desc">외부 온라인 저지에 의존하지 않고, 로컬 문제 세트에 여러 풀이를 <b style="color:var(--ink);font-weight:500">동일 조건</b>으로 실행해 <b style="color:var(--amber);font-weight:500">정답 여부 + 실행 시간</b>을 비교하는 학습용 stand-alone 도구.</p>
+  <div class="chips">
+    <div class="chip"><i></i>Pure Java SE</div>
+    <div class="chip"><i></i>빌드 도구 0</div>
+    <div class="chip"><i></i>런타임 의존성 0</div>
+    <div class="chip cy"><i></i>javac / java 직접 실행</div>
+    <div class="chip cy"><i></i>네트워크·DB·GUI 범위 밖</div>
+  </div>
+  <div class="scrollcue"><span class="arr"></span>SCROLL · 파이프라인 / 아키텍처 / 마일스톤</div>
+</header>
+
+<!-- ================= STATS ================= -->
+<section class="wrap" style="padding-top:30px">
+  <div class="stats rv">
+    <div class="s"><div class="n">5</div><div class="l">파이프라인 단계</div></div>
+    <div class="s"><div class="n cy">6</div><div class="l">독립 패키지</div></div>
+    <div class="s"><div class="n">8</div><div class="l">마일스톤 M0–M7</div></div>
+    <div class="s"><div class="n cy">4</div><div class="l">핵심 인터페이스</div></div>
+  </div>
+</section>
+
+<!-- ================= PIPELINE ================= -->
+<section class="wrap">
+  <div class="kicker rv"><span class="ln"></span><span class="tag">01 · DATA FLOW</span></div>
+  <h2 class="rv d1">데이터 <span class="dim">파이프라인</span></h2>
+  <p class="lead rv d2">각 단계는 독립 패키지. 변경 가능성 높은 지점은 인터페이스로 추상화 — 엔진 수정 없이 구현체 추가(NFR-03).</p>
+
+  <div class="pipe rv d2">
+    <div class="stage"><div class="node"><div class="idx">01</div><div class="ic">📥</div><div class="nm">로드</div><div class="pkg">loader · domain</div></div><span class="arrow">▶</span></div>
+    <div class="stage"><div class="node"><div class="idx">02</div><div class="ic">⚙️</div><div class="nm">실행</div><div class="pkg">solution</div></div><span class="arrow">▶</span></div>
+    <div class="stage"><div class="node"><div class="idx">03</div><div class="ic">⚖️</div><div class="nm">비교</div><div class="pkg">compare</div></div><span class="arrow">▶</span></div>
+    <div class="stage"><div class="node"><div class="idx">04</div><div class="ic">📊</div><div class="nm">결과 수집</div><div class="pkg">engine</div></div><span class="arrow">▶</span></div>
+    <div class="stage"><div class="node"><div class="idx">05</div><div class="ic">📑</div><div class="nm">리포팅</div><div class="pkg">result</div></div></div>
+  </div>
+</section>
+
+<!-- ================= ARCHITECTURE ================= -->
+<section class="wrap">
+  <div class="kicker rv"><span class="ln"></span><span class="tag cy">02 · ARCHITECTURE</span></div>
+  <h2 class="rv d1">패키지 <span class="dim">& 클래스 맵</span></h2>
+  <p class="lead rv d2">책임 분리 + 확장점. 불변 도메인 · 다형성 실행 · 교체 가능한 채점/리포팅.</p>
+
+  <div class="grid-pkg">
+    <div class="pcard rv d1">
+      <div class="hd"><span class="pn">domain</span><span class="ct">2 cls</span></div>
+      <div class="bd">
+        <div class="cls data"><span class="dot"></span><span class="nm">Problem</span><span class="bd-note">불변</span></div>
+        <div class="cls data"><span class="dot"></span><span class="nm">TestCase</span><span class="bd-note">불변</span></div>
+      </div>
+    </div>
+    <div class="pcard rv d2">
+      <div class="hd"><span class="pn">loader</span><span class="ct">1 cls</span></div>
+      <div class="bd">
+        <div class="cls"><span class="dot"></span><span class="nm">ProblemLoader</span><span class="bd-note">텍스트 파서</span></div>
+      </div>
+    </div>
+    <div class="pcard rv d3">
+      <div class="hd"><span class="pn">solution</span><span class="ct">4 cls</span></div>
+      <div class="bd">
+        <div class="cls iface"><span class="dot"></span><span class="nm">Solution</span><span class="badge b-if">interface</span></div>
+        <div class="cls data"><span class="dot"></span><span class="nm">ExecutionResult</span><span class="bd-note">data</span></div>
+        <div class="cls"><span class="dot"></span><span class="nm">JavaJarSolution</span></div>
+        <div class="cls"><span class="dot"></span><span class="nm">ExternalProcessSolution</span></div>
+      </div>
+    </div>
+    <div class="pcard rv d1">
+      <div class="hd"><span class="pn">compare</span><span class="ct">3 cls</span></div>
+      <div class="bd">
+        <div class="cls iface"><span class="dot"></span><span class="nm">OutputComparator</span><span class="badge b-if">interface</span></div>
+        <div class="cls"><span class="dot"></span><span class="nm">ExactOutputComparator</span></div>
+        <div class="cls"><span class="dot"></span><span class="nm">WhitespaceNormalizing…</span></div>
+      </div>
+    </div>
+    <div class="pcard rv d2">
+      <div class="hd"><span class="pn">engine</span><span class="ct">2 cls</span></div>
+      <div class="bd">
+        <div class="cls"><span class="dot"></span><span class="nm">JudgeEngine</span><span class="bd-note">ExecutorService</span></div>
+        <div class="cls"><span class="dot"></span><span class="nm">GradingTask</span><span class="bd-note">Callable&lt;…&gt;</span></div>
+      </div>
+    </div>
+    <div class="pcard rv d3">
+      <div class="hd"><span class="pn">result</span><span class="ct">7 cls</span></div>
+      <div class="bd">
+        <div class="cls data"><span class="dot"></span><span class="nm">BenchmarkResult</span><span class="bd-note">data</span></div>
+        <div class="cls data"><span class="dot"></span><span class="nm">TestCaseResult</span><span class="bd-note">data</span></div>
+        <div class="cls iface"><span class="dot"></span><span class="nm">ResultLogger</span><span class="badge b-if">interface</span></div>
+        <div class="cls"><span class="dot"></span><span class="nm">Console / Csv Logger</span></div>
+        <div class="cls iface"><span class="dot"></span><span class="nm">ResultFormatter</span><span class="badge b-if">interface</span></div>
+        <div class="cls"><span class="dot"></span><span class="nm">BenchmarkSummaryPrinter</span><span class="badge b-g">G1</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend rv">
+    <span><i class="dot" style="background:var(--violet)"></i>구현 클래스</span>
+    <span><i class="dot" style="border:1.5px solid var(--cyan);border-radius:50%;background:transparent"></i>인터페이스 (확장점)</span>
+    <span><i class="dot" style="background:var(--green)"></i>불변 Data Class</span>
+    <span><i class="dot" style="background:var(--amber)"></i>G1~G4 보정 (plan_claude3)</span>
+  </div>
+
+  <!-- polymorphism -->
+  <div class="poly rv">
+    <h3>// 다형성 확장점 — 엔진 수정 없이 구현체 교체</h3>
+    <div class="tree">
+      <div class="branch">
+        <div class="iface-box">Solution<small>«interface»</small></div>
+        <div class="connector"></div>
+        <div class="impls">
+          <div class="impl">JavaJarSolution<span class="t">URLClassLoader · 리플렉션 main()</span></div>
+          <div class="impl">ExternalProcessSolution<span class="t">ProcessBuilder · C/C++/Python</span></div>
+        </div>
+      </div>
+      <div class="branch">
+        <div class="iface-box">OutputComparator<small>«interface»</small></div>
+        <div class="connector"></div>
+        <div class="impls">
+          <div class="impl">ExactOutputComparator<span class="t">정규화 후 정확 비교</span></div>
+          <div class="impl">WhitespaceNormalizing<span class="t">토큰 단위 (NFR-03)</span></div>
+        </div>
+      </div>
+      <div class="branch">
+        <div class="iface-box">ResultLogger<small>«interface»</small></div>
+        <div class="connector"></div>
+        <div class="impls">
+          <div class="impl">ConsoleResultLogger<span class="t">표 형태 출력</span></div>
+          <div class="impl">CsvResultLogger<span class="t">파일 append · formatter DI</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROBLEM FORMAT ================= -->
+<section class="wrap">
+  <div class="kicker rv"><span class="ln"></span><span class="tag">03 · INPUT FORMAT</span></div>
+  <h2 class="rv d1">문제 파일 <span class="dim">포맷</span></h2>
+  <p class="lead rv d2"><code style="font-family:var(--mono);color:var(--cyan)">KEY: VALUE</code> 헤더 + <code style="font-family:var(--mono);color:var(--cyan)">###</code> 케이스 구분 + <code style="font-family:var(--mono);color:var(--cyan)">INPUT:</code>/<code style="font-family:var(--mono);color:var(--cyan)">EXPECTED:</code> 블록. ProblemLoader가 파싱.</p>
+
+  <div class="code rv d2">
+    <div class="top"><i></i><i></i><i></i><span class="fn">problems/a_plus_b.txt</span></div>
+<pre><span class="k">TITLE:</span> <span class="v">A+B</span>
+<span class="k">TIME_LIMIT_MS:</span> <span class="v">2000</span>
+<span class="k">MEMORY_LIMIT_MB:</span> <span class="v">256</span>   <span class="c"># 메타데이터만 — 강제 X</span>
+<span class="h">###</span>
+<span class="s">INPUT:</span>
+1 2
+<span class="s">EXPECTED:</span>
+3
+<span class="h">###</span>
+<span class="s">INPUT:</span>
+5 7
+<span class="s">EXPECTED:</span>
+12</pre>
+  </div>
+</section>
+
+<!-- ================= MILESTONES ================= -->
+<section class="wrap">
+  <div class="kicker rv"><span class="ln"></span><span class="tag cy">04 · ROADMAP</span></div>
+  <h2 class="rv d1">마일스톤 <span class="dim">M0 → M7</span></h2>
+  <p class="lead rv d2">9단계 구현 순서를 의존성 기준 8개 마일스톤으로 분해. 각 단계는 독립 컴파일·검증 가능. 완료 기준(Exit Criteria) 충족 후 다음으로.</p>
+
+  <div class="rail">
+    <!-- M0 -->
+    <div class="ms rv">
+      <div class="spine"><div class="ball">M0</div><div class="stem"></div></div>
+      <div class="card">
+        <div class="mh"><h3>프로젝트 골격</h3><span class="en">Scaffolding</span></div>
+        <p class="goal">디렉토리 구조 + 문서 기반. 로직 없음.</p>
+        <div class="deliv"><span class="d">디렉토리 트리</span><span class="d">README.md</span><span class="d">build.ps1</span><span class="d">ai_rec.md</span></div>
+        <div class="exit"><div class="xl">Exit Criteria</div><ul>
+          <li>구조가 plan.md와 일치</li><li>README · build.ps1 · ai_rec 존재</li></ul></div>
+        <div class="dep">DEPENDS · <b>없음 (시작점)</b></div>
+      </div>
+    </div>
+    <!-- M1 -->
+    <div class="ms rv">
+      <div class="spine"><div class="ball">M1</div><div class="stem"></div></div>
+      <div class="card">
+        <div class="mh"><h3>도메인 + 비교기</h3><span class="en">Domain & Comparators</span></div>
+        <p class="goal">불변 핵심 타입 + 채점 정책. <code style="font-family:var(--mono);font-size:12px;color:var(--cyan)">TestCase.matches</code>가 OutputComparator 참조 → 한 묶음.</p>
+        <div class="deliv"><span class="d if">OutputComparator</span><span class="d">ExactOutputComparator</span><span class="d">WhitespaceNormalizing</span><span class="d">TestCase</span><span class="d">Problem</span></div>
+        <div class="exit"><div class="xl">Exit Criteria</div><ul>
+          <li>domain + compare 컴파일 성공 (에러 0)</li><li>전부 불변 — 생성자 주입 + getter, 방어적 복사</li></ul></div>
+        <div class="dep">DEPENDS · <b>M0</b></div>
+      </div>
+    </div>
+    <!-- M2 -->
+    <div class="ms rv">
+      <div class="spine"><div class="ball">M2</div><div class="stem"></div></div>
+      <div class="card">
+        <div class="mh"><h3>문제 로더 + 샘플</h3><span class="en">Loader & Problem Files</span></div>
+        <p class="goal">문제 포맷 파싱 → Problem 객체.</p>
+        <div class="deliv"><span class="d">ProblemLoader</span><span class="d">a_plus_b.txt</span><span class="d">max_of_three.txt</span></div>
+        <div class="exit"><div class="xl">Exit Criteria</div><ul>
+          <li>loader 컴파일 성공</li><li>샘플 파일 포맷 스펙 준수</li><li>스모크: 케이스 수·헤더 값 정상 파싱</li></ul></div>
+        <div class="dep">DEPENDS · <b>M1</b></div>
+      </div>
+    </div>
+    <!-- M3 -->
+    <div class="ms rv">
+      <div class="spine"><div class="ball">M3</div><div class="stem"></div></div>
+      <div class="card">
+        <div class="mh"><h3>결과 데이터 + 리포팅</h3><span class="en">Result & Reporting</span></div>
+        <p class="goal">채점 결과 불변 데이터 + 출력 계층(콘솔/CSV/요약).</p>
+        <div class="deliv"><span class="d">TestCaseResult</span><span class="d">BenchmarkResult</span><span class="d if">ResultLogger</span><span class="d">Console / Csv Logger</span><span class="d if">ResultFormatter</span><span class="d g">BenchmarkSummaryPrinter · G1</span></div>
+        <div class="exit"><div class="xl">Exit Criteria</div><ul>
+          <li>result 패키지 컴파일 성공</li><li>데이터 클래스 불변 + 방어적 복사</li>
+          <li><b style="color:var(--amber)">G2</b> 마이크로초대 풀이 시간이 0 아닌 소수 ms 표시</li>
+          <li><b style="color:var(--amber)">G1</b> SummaryPrinter 통과 우선 → 총 시간 오름차순 정렬, 최속 정답 강조</li></ul></div>
+        <div class="dep">DEPENDS · <b>M1</b> (M4와 병행 가능)</div>
+      </div>
+    </div>
+    <!-- M4 -->
+    <div class="ms rv">
+      <div class="spine"><div class="ball">M4</div><div class="stem"></div></div>
+      <div class="card">
+        <div class="mh"><h3>풀이 실행</h3><span class="en">Solution Execution</span></div>
+        <p class="goal">동일 stdin/stdout 계약을 따르는 두 실행 모델 — 핵심 다형성 지점.</p>
+        <div class="deliv"><span class="d">ExecutionResult</span><span class="d if">Solution</span><span class="d">ExternalProcessSolution</span><span class="d">JavaJarSolution</span></div>
+        <div class="exit"><div class="xl">Exit Criteria</div><ul>
+          <li>solution 패키지 컴파일 성공</li>
+          <li>외부 프로세스: 타임아웃 초과 시 destroyForcibly 확실 종료</li>
+          <li>JavaJarSolution: 스트림 교체 static 락 보호</li>
+          <li><b style="color:var(--amber)">G3</b> 스왑→로드→타이머→invoke 순서 — static init 출력 캡처</li></ul></div>
+        <div class="dep">DEPENDS · <b>M1</b></div>
+      </div>
+    </div>
+    <!-- M5 -->
+    <div class="ms rv">
+      <div class="spine"><div class="ball">M5</div><div class="stem"></div></div>
+      <div class="card">
+        <div class="mh"><h3>엔진</h3><span class="en">Judge Engine</span></div>
+        <p class="goal">풀이×문제 비동기 채점 + 메인 스레드 순차 로깅.</p>
+        <div class="deliv"><span class="d">GradingTask</span><span class="d">JudgeEngine</span></div>
+        <div class="exit"><div class="xl">Exit Criteria</div><ul>
+          <li>engine 패키지 컴파일 성공</li>
+          <li>한 풀이 예외가 전체 벤치마크 중단 안 함 (예외 격리)</li>
+          <li>로깅 메인 스레드 직렬화 (결과 섞임 없음)</li>
+          <li><b style="color:var(--amber)">G4</b> shutdown() awaitTermination → shutdownNow 안전망</li></ul></div>
+        <div class="dep">DEPENDS · <b>M1 · M3 · M4</b></div>
+      </div>
+    </div>
+    <!-- M6 -->
+    <div class="ms rv">
+      <div class="spine"><div class="ball">M6</div><div class="stem"></div></div>
+      <div class="card">
+        <div class="mh"><h3>Main + 샘플 풀이</h3><span class="en">CLI & Demo</span></div>
+        <p class="goal">CLI 진입점 완성 + 데모용 샘플 풀이.</p>
+        <div class="deliv"><span class="d">Main.java</span><span class="d">CorrectSolution</span><span class="d">WrongSolution</span><span class="d">TimeoutSolution</span><span class="d">correct_solution.py</span></div>
+        <div class="exit"><div class="xl">Exit Criteria</div><ul>
+          <li>전체 src + 샘플 Java 풀이 컴파일 성공</li>
+          <li>Main이 4개 풀이 인자 받아 실행 가능</li>
+          <li><b style="color:var(--amber)">G1</b> Main이 evaluateAll 후 비교 요약 출력</li></ul></div>
+        <div class="dep">DEPENDS · <b>M5</b></div>
+      </div>
+    </div>
+    <!-- M7 -->
+    <div class="ms rv">
+      <div class="spine"><div class="ball">M7</div></div>
+      <div class="card">
+        <div class="mh"><h3>빌드 + E2E 검증</h3><span class="en">Verification</span></div>
+        <p class="goal">JUnit 없이 데모 러너 end-to-end 실행으로 전체 검증.</p>
+        <div class="deliv"><span class="d">build.ps1 실행</span><span class="d">4풀이 시나리오</span><span class="d">result.csv</span></div>
+        <div class="exit"><div class="xl">Exit Criteria</div><ul>
+          <li>컴파일 성공 (에러 0)</li>
+          <li>Correct 전체 통과 / Wrong 케이스 실패 / Timeout 표시·계속 / Python 다형성 통과</li>
+          <li>reports/result.csv 헤더 + 풀이별 행</li>
+          <li><b style="color:var(--amber)">G1</b> 비교 요약 표 정렬·최속 정답 강조 확인</li>
+          <li><b style="color:var(--amber)">G2</b> 빠른 풀이 0ms 아닌 소수 ms 확인</li></ul></div>
+        <div class="dep">DEPENDS · <b>M6</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DEPENDENCY GRAPH ================= -->
+<section class="wrap">
+  <div class="kicker rv"><span class="ln"></span><span class="tag">04.1 · DEPENDENCY DAG</span></div>
+  <h2 class="rv d1">의존성 <span class="dim">그래프</span></h2>
+  <p class="lead rv d2">M3 · M4는 M1 위에서 <b style="color:var(--cyan);font-weight:500">병행 가능</b>. M5가 M1·M3·M4를 합류시킨다.</p>
+
+  <div class="depgraph rv d2">
+    <svg viewBox="0 0 820 220" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 Z" fill="#ffb43a"/>
+        </marker>
+        <linearGradient id="gl" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#2c3a4a"/><stop offset="1" stop-color="#ffb43a"/>
+        </linearGradient>
+      </defs>
+      <style>
+        .nd{fill:#11171f;stroke:#2c3a4a;stroke-width:1.5}
+        .nd-h{fill:rgba(255,180,58,.08);stroke:#ffb43a;stroke-width:1.5}
+        .lbl{fill:#e7eef6;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:15px}
+        .ed{stroke:#3a4a5c;stroke-width:1.5;fill:none;marker-end:url(#ah)}
+        .ed-p{stroke:#1f6f63;stroke-width:1.5;fill:none;stroke-dasharray:4 3;marker-end:url(#ah)}
+      </style>
+      <!-- edges -->
+      <path class="ed" d="M88,110 H148"/>
+      <path class="ed-p" d="M210,95 C250,60 250,55 300,52"/>
+      <path class="ed-p" d="M210,110 H300"/>
+      <path class="ed-p" d="M210,125 C250,160 250,165 300,168"/>
+      <path class="ed" d="M362,52 C420,70 420,95 470,108"/>
+      <path class="ed" d="M362,110 H470"/>
+      <path class="ed" d="M362,168 C420,150 420,125 470,112"/>
+      <path class="ed" d="M532,110 H592"/>
+      <path class="ed" d="M654,110 H714"/>
+      <!-- nodes -->
+      <g><circle class="nd" cx="58" cy="110" r="30"/><text class="lbl" x="58" y="116" text-anchor="middle">M0</text></g>
+      <g><circle class="nd" cx="180" cy="110" r="30"/><text class="lbl" x="180" y="116" text-anchor="middle">M1</text></g>
+      <g><circle class="nd" cx="332" cy="52" r="30"/><text class="lbl" x="332" y="58" text-anchor="middle">M2</text></g>
+      <g><circle class="nd" cx="332" cy="110" r="30"/><text class="lbl" x="332" y="116" text-anchor="middle">M3</text></g>
+      <g><circle class="nd" cx="332" cy="168" r="30"/><text class="lbl" x="332" y="174" text-anchor="middle">M4</text></g>
+      <g><circle class="nd-h" cx="502" cy="110" r="30"/><text class="lbl" x="502" y="116" text-anchor="middle">M5</text></g>
+      <g><circle class="nd-h" cx="624" cy="110" r="30"/><text class="lbl" x="624" y="116" text-anchor="middle">M6</text></g>
+      <g><circle class="nd-h" cx="746" cy="110" r="30"/><text class="lbl" x="746" y="116" text-anchor="middle">M7</text></g>
+      <text x="332" y="205" text-anchor="middle" fill="#5a6b7c" font-family="JetBrains Mono" font-size="10">M2 · M3 · M4 → M1 위에서 병행</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ================= G REFINEMENTS ================= -->
+<section class="wrap">
+  <div class="kicker rv"><span class="ln"></span><span class="tag">05 · REFINEMENTS</span></div>
+  <h2 class="rv d1">보정 항목 <span class="dim">G1 – G4</span></h2>
+  <p class="lead rv d2">수렴본 <code style="font-family:var(--mono);color:var(--cyan)">plan_claude3.md</code>에서 추가된 벤치마킹 본질 보강 + micro-refinement.</p>
+
+  <div class="gs">
+    <div class="gcard rv d1"><div class="gid">G1</div><div class="gt">BenchmarkSummaryPrinter</div><p>풀이 간 비교/순위 요약. 통과 우선 → 총 시간 오름차순, 최속 정답 강조.</p><div class="gm">→ M3 · M6 · M7</div></div>
+    <div class="gcard rv d2"><div class="gid">G2</div><div class="gt">소수 ms 정밀도</div><p><code style="color:var(--cyan);font-family:var(--mono);font-size:11px">toNanos()/1e6</code> — 마이크로초대 풀이 0ms 뭉갬 방지.</p><div class="gm">→ M3 · M7</div></div>
+    <div class="gcard rv d3"><div class="gid">G3</div><div class="gt">스왑→로드 순서</div><p>스트림 스왑 후 클래스 로드 — static initializer stdout 캡처.</p><div class="gm">→ M4</div></div>
+    <div class="gcard rv d4"><div class="gid">G4</div><div class="gt">shutdown 안전망</div><p>awaitTermination → 미종료 시 shutdownNow. 지연 task가 JVM 종료 막지 않게.</p><div class="gm">→ M5</div></div>
+  </div>
+</section>
+
+<!-- ================= DESIGN NOTES ================= -->
+<section class="wrap">
+  <div class="kicker rv"><span class="ln"></span><span class="tag cy">06 · NON-TRIVIAL RULES</span></div>
+  <h2 class="rv d1">구현 시 <span class="dim">비자명 규칙</span></h2>
+  <p class="lead rv d2">위반 시 정확성·스레드 안전이 깨진다. 구현 전 반드시 숙지.</p>
+
+  <div class="notes">
+    <div class="note rv d1"><div class="nn">// RULE 01</div><h4>전역 스트림 직렬화</h4><p><code>System.in/out</code>은 JVM 전역. JavaJarSolution이 스트림 교체 → Java 풀이 병렬 시 출력 섞임. 교체 구간을 <code>static</code> 락으로 직렬화. 병렬성은 외부 프로세스에서 확보.</p></div>
+    <div class="note rv d2"><div class="nn">// RULE 02</div><h4>타임아웃 전략</h4><p>외부 프로세스: <code>waitFor(timeout)</code> + <code>destroyForcibly()</code> 확실 종료. Java 풀이: 같은 JVM이라 강제 종료 불가 → 데몬 스레드 + <code>Future.get(timeout)</code> best-effort.</p></div>
+    <div class="note rv d1"><div class="nn">// RULE 03</div><h4>예외 격리 (NFR-04)</h4><p><code>GradingTask.call()</code>은 케이스 단위로 예외를 잡아 <code>errorMessage</code>에 기록하고 계속 진행. 풀이 1개 크래시가 전체 벤치마크를 깨선 안 됨.</p></div>
+    <div class="note rv d2"><div class="nn">// RULE 04</div><h4>불변 + 방어적 복사</h4><p>모든 도메인/데이터 객체는 생성자 주입 + getter, 컬렉션은 <code>List.copyOf</code>. 공유 가변 상태 0 (NFR-05). 로깅은 메인 스레드 순차.</p></div>
+    <div class="note rv d1"><div class="nn">// RULE 05</div><h4>메모리 제한 = 메타데이터</h4><p><code>memoryLimit</code>는 보관만, 강제하지 않는다. Problem의 메타 필드로 저장.</p></div>
+    <div class="note rv d2"><div class="nn">// VERIFY</div><h4>검증 = Main 데모 러너</h4><p>JUnit 없음. 단일 "테스트" = 단일 풀이를 단일 문제로 실행. E2E end-to-end 실행으로 검증. 결과는 <code>ai_rec.md</code>에 기록.</p></div>
+  </div>
+</section>
+
+<!-- ================= VERIFICATION ================= -->
+<section class="wrap">
+  <div class="kicker rv"><span class="ln"></span><span class="tag">07 · E2E SCENARIOS</span></div>
+  <h2 class="rv d1">검증 <span class="dim">시나리오</span></h2>
+  <p class="lead rv d2">4개 풀이를 한 문제에 실행 — 정답 · 오답 · 타임아웃 · 외부 프로세스 다형성을 한 번에 검증.</p>
+
+  <div class="vtable rv d2">
+    <div class="vrow head"><div>SOLUTION</div><div>기대 동작</div><div>판정</div></div>
+    <div class="vrow"><div class="sol">CorrectSolution</div><div class="res">전 케이스 통과 (allPassed=true)</div><div><span class="pill pass">PASS</span></div></div>
+    <div class="vrow"><div class="sol">WrongSolution</div><div class="res">특정 케이스 실패 + 기대/실제 비교</div><div><span class="pill fail">WRONG</span></div></div>
+    <div class="vrow"><div class="sol">TimeoutSolution</div><div class="res">무한루프 → 타임아웃 표시, 프로그램 계속 진행 (NFR-04)</div><div><span class="pill time">TIMEOUT</span></div></div>
+    <div class="vrow"><div class="sol">correct_solution.py</div><div class="res">외부 프로세스 경로로 정답 처리 — 다형성 검증</div><div><span class="pill poly">EXTERNAL</span></div></div>
+  </div>
+
+  <div class="runbox rv">
+<span class="ln"><span class="cm"># 엔진 + 샘플 풀이 컴파일 → 실행</span></span>
+<span class="ln"><span class="pr">java</span> -cp out algobench.Main problems/a_plus_b.txt `</span>
+<span class="ln">     <span class="fl">out_solutions/CorrectSolution.class</span> `</span>
+<span class="ln">     <span class="fl">out_solutions/WrongSolution.class</span> `</span>
+<span class="ln">     <span class="fl">out_solutions/TimeoutSolution.class</span> `</span>
+<span class="ln">     <span class="fl">"python solutions/python/correct_solution.py"</span></span>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="wrap">
+  <div class="foot">
+    <span>ALGOBENCH · <b>구현 설계도 & 마일스톤</b></span>
+    <span>SOURCE · plan.md + MILESTONES.md <b>(G1–G4 반영)</b></span>
+    <span>202311516 <b>권창민</b></span>
+  </div>
+</footer>
+
+<script>
+// staggered scroll reveal
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+
+// parallax-ish grid drift on scroll
+let tk=false;
+addEventListener('scroll',()=>{
+  if(tk)return;tk=true;
+  requestAnimationFrame(()=>{
+    const y=scrollY*0.04;
+    document.body.style.setProperty('--gy',y+'px');
+    tk=false;
+  });
+});
+</script>
+</body>
+</html>
