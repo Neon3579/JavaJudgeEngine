@@ -226,3 +226,22 @@
 ### 현재 상태
 - 계획 문서 계보: plan.md → plan_codex.md → plan_claude.md → plan_codex2.md → plan_claude2.md → plan_codex3.md → **plan_claude3.md**(최신·수렴).
 - 코드 구현은 사용자 추가 지시 대기 중. (구현 착수 권고)
+
+---
+
+## 세션 7 — 2026-06-06 · 마일스톤 분해 → MILESTONES.md 생성
+
+### 사용자 프롬프트 #9
+> 단계별 작업을 할 수 있도록 계획을 확인해 작업들을 마일스톤별로 나누고 그걸 .md 파일로 저장해줘.
+
+### AI 행동
+1. `plan.md`(CLAUDE.md 지정 source of truth) 정독 — §구현 순서(9단계) + §Verification 확인.
+2. 9단계 구현 순서를 의존성 기준 8개 마일스톤(M0~M7)으로 재그룹화. 각 마일스톤에 목표·작업·완료 기준(Exit Criteria)·의존성 명시.
+   - M0 골격 / M1 도메인+비교기 / M2 로더+샘플문제 / M3 결과+로거 / M4 풀이실행 / M5 엔진 / M6 Main+샘플풀이 / M7 E2E 검증.
+   - `TestCase.matches`가 `OutputComparator` 참조 → 도메인+비교기를 M1로 묶음. M3·M4는 M1 위에서 병행 가능 표기.
+3. `MILESTONES.md` 생성. 의존성 그래프 + 마일스톤별 산출물/핵심검증 요약 표 포함.
+4. 참고: 본 분해는 `plan.md` 기준. 최신 수렴본 `plan_claude3.md`의 추가 항목(G1 BenchmarkSummaryPrinter 풀이 간 비교/순위 요약, G2 ms 소수점 정밀도, G3 스왑→로드 순서, G4 awaitTermination 안전망)은 미반영 — 사용자 선택 시 M3/M4/M5/M6에 반영 필요.
+
+### 현재 상태
+- 단계별 실행 문서 `MILESTONES.md` 추가(M0~M7).
+- 코드 구현은 사용자 추가 지시 대기 중.
