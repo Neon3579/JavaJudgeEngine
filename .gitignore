@@ -6,9 +6,10 @@ out_solutions/
 reports/
 *.csv
 
-# 컴파일된 클래스
+# 컴파일된 클래스 / jar 빌드 산출물 (algobench.bat build 가 재생성)
 *.class
 *.jar
+dist/
 
 # OS / 에디터
 Thumbs.db

@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlgoBench 최종 보고서 — 권창민 202311516</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14233f;        /* 제목/짙은 본문 */
+    --body:#283342;       /* 본문 */
+    --muted:#6b7480;       /* 보조 */
+    --faint:#9aa3ad;
+    --accent:#b26a1f;      /* 카퍼/앰버 — 단일 강조 */
+    --accent-soft:#f3e6d4;
+    --teal:#0f5e4e;        /* 보조 강조(코드/성공) */
+    --red:#b3402f;
+    --line:#e4ded2;        /* 따뜻한 구분선 */
+    --line-2:#eee9df;
+    --paper:#ffffff;
+    --cream:#faf6ee;
+    --navy:#13203a;        /* 표지 */
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --kr:'IBM Plex Sans KR','Malgun Gothic',sans-serif;
+    --disp:'Fraunces','IBM Plex Sans KR','Malgun Gothic',serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body,.sheet,.cover,pre,.console,th,.pstage,.pcol .ph,.kpi,.callout{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{background:#cfd3d8}
+  body{font-family:var(--kr);color:var(--body);font-weight:300;line-height:1.62;-webkit-font-smoothing:antialiased;}
+
+  /* ── A4 SHEET ── */
+  .sheet{
+    position:relative;width:210mm;min-height:297mm;background:var(--paper);
+    margin:0 auto;padding:22mm 19mm 20mm;box-sizing:border-box;
+    page-break-after:always;overflow:hidden;
+  }
+  .sheet:last-child{page-break-after:auto}
+  @media screen{
+    .sheet{margin:8mm auto;box-shadow:0 4px 26px rgba(0,0,0,.22)}
+  }
+  @page{size:A4;margin:0}
+  @page cover{size:A4;margin:0}
+
+  .pageno{position:absolute;left:19mm;right:19mm;bottom:11mm;display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:8.5px;color:var(--faint);letter-spacing:.04em;
+    border-top:1px solid var(--line-2);padding-top:5px}
+  .pageno b{color:var(--accent);font-weight:500}
+
+  /* ── COVER ── */
+  .cover{page:cover;background:var(--navy);color:#eaf0f8;padding:0;overflow:hidden}
+  .cover .frame{position:absolute;inset:14mm;border:1px solid rgba(178,106,31,.42);pointer-events:none}
+  .cover .grid{position:absolute;inset:0;opacity:.5;
+    background-image:linear-gradient(rgba(120,150,190,.06) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(120,150,190,.06) 1px,transparent 1px);
+    background-size:11mm 11mm;
+    -webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 38%,#000 35%,transparent 88%);
+            mask-image:radial-gradient(ellipse 90% 70% at 50% 38%,#000 35%,transparent 88%);}
+  .cover .inner{position:relative;height:297mm;display:flex;flex-direction:column;padding:30mm 26mm}
+  .cover .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--accent);
+    display:flex;align-items:center;gap:14px}
+  .cover .eyebrow::before{content:"";width:46px;height:1px;background:var(--accent)}
+  .cover .spacer{flex:1}
+  .cover h1{font-family:var(--disp);font-weight:600;font-size:78px;line-height:.98;letter-spacing:-.015em;color:#fff;margin-top:8px}
+  .cover h1 .dot{color:var(--accent)}
+  .cover .ko-title{font-family:var(--kr);font-weight:600;font-size:23px;color:#c8d4e6;margin-top:20px;letter-spacing:-.01em}
+  .cover .sub{font-size:15px;color:#9fb0c8;font-weight:300;margin-top:14px;max-width:128mm;line-height:1.7}
+  .cover .rule{height:1px;background:linear-gradient(90deg,var(--accent),transparent);margin:26px 0;width:60mm}
+  .cover .chips{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px}
+  .cover .chip{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:#bcd; border:1px solid rgba(160,180,210,.3);
+    padding:6px 11px;border-radius:2px}
+  .cover .meta{display:flex;gap:46px;margin-top:34px;border-top:1px solid rgba(160,180,210,.22);padding-top:20px}
+  .cover .meta .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+  .cover .meta .v{font-size:15px;color:#e6edf6;font-weight:400}
+
+  /* ── HEADINGS ── */
+  .chap-head{display:flex;align-items:flex-start;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:11px;margin-bottom:20px}
+  .chap-no{font-family:var(--disp);font-weight:700;font-size:40px;line-height:.8;color:var(--accent)}
+  .chap-titles .ct-en{font-family:var(--mono);font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+  .chap-titles h2{font-family:var(--disp);font-weight:600;font-size:27px;color:var(--ink);letter-spacing:-.01em;margin-top:3px}
+
+  h3{font-family:var(--kr);font-weight:600;font-size:14.5px;color:var(--ink);margin:18px 0 8px;
+    display:flex;align-items:center;gap:8px}
+  h3::before{content:"";width:11px;height:11px;background:var(--accent);border-radius:2px;transform:rotate(45deg);flex:none}
+  h4{font-weight:600;font-size:12.5px;color:var(--ink);margin:12px 0 4px}
+  p{font-size:11.6px;color:var(--body);margin-bottom:9px;text-align:justify;word-break:keep-all}
+  p.lead{font-size:13px;color:var(--ink);font-weight:400;line-height:1.7}
+  b,strong{font-weight:600;color:var(--ink)}
+  .accent{color:var(--accent);font-weight:500}
+  em.k{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--teal);
+    background:#eef5f2;padding:1px 5px;border-radius:3px;border:1px solid #dcebe5}
+  ul,ol{margin:6px 0 10px 18px}
+  li{font-size:11.5px;color:var(--body);margin-bottom:4px;line-height:1.55;word-break:keep-all}
+  li b{color:var(--ink)}
+
+  .callout{background:var(--cream);border-left:3px solid var(--accent);border-radius:0 5px 5px 0;
+    padding:11px 15px;margin:12px 0;font-size:11.3px}
+  .callout .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:4px}
+
+  /* figures */
+  figure{margin:13px 0;text-align:center}
+  figure img{width:100%;border:1px solid var(--line);border-radius:6px;box-shadow:0 2px 10px rgba(20,35,63,.10)}
+  figure.half{margin:9px 0}
+  figure.half img{width:52%}
+  figcaption{font-size:9.8px;color:var(--muted);margin-top:7px;font-family:var(--mono);letter-spacing:.02em}
+  figcaption b{color:var(--accent);font-weight:500}
+
+  /* tables */
+  table{width:100%;border-collapse:collapse;margin:11px 0;font-size:10.6px}
+  th{background:var(--ink);color:#fff;font-weight:500;text-align:left;padding:7px 9px;font-size:10px;letter-spacing:.02em}
+  td{padding:6px 9px;border-bottom:1px solid var(--line);color:var(--body);vertical-align:top}
+  tr:nth-child(even) td{background:#faf8f3}
+  td .mono,th .mono{font-family:var(--mono)}
+  .tbl-mono td:first-child{font-family:var(--mono);color:var(--ink);font-size:10px}
+
+  /* code / console */
+  pre{background:#13203a;color:#d6deea;font-family:var(--mono);font-size:9px;line-height:1.5;
+    padding:12px 14px;border-radius:6px;overflow:hidden;margin:11px 0;white-space:pre-wrap}
+  pre .c{color:#7fd1b8}.pre-amber{color:#e6a35a}
+  .console{background:#13203a;border-radius:6px;padding:13px 15px;margin:11px 0;font-family:var(--mono);font-size:8.7px;
+    line-height:1.55;color:#cdd6e3;white-space:pre;overflow:hidden}
+  .console .ok{color:#74d39c}.console .bad{color:#e08b7e}.console .star{color:#e6b35a}.console .dim{color:#7c8ba0}.console .hd{color:#9fc6ff}
+
+  /* pipeline diagram */
+  .pipe{display:flex;align-items:stretch;gap:6px;margin:13px 0}
+  .pstage{flex:1;background:var(--cream);border:1px solid var(--line);border-radius:5px;padding:9px 7px;text-align:center;position:relative}
+  .pstage .pn{font-family:var(--mono);font-size:8px;color:var(--accent);letter-spacing:.1em}
+  .pstage .pt{font-weight:600;font-size:12px;color:var(--ink);margin:2px 0}
+  .pstage .pc{font-family:var(--mono);font-size:7.6px;color:var(--muted);line-height:1.4}
+  .parrow{display:flex;align-items:center;color:var(--accent);font-weight:700;font-size:13px}
+
+  /* polymorphism tree */
+  .poly{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:12px 0}
+  .pcol{border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  .pcol .ph{background:var(--ink);color:#fff;padding:6px 8px;font-family:var(--mono);font-size:9.5px;text-align:center}
+  .pcol .ph small{display:block;color:var(--accent);font-size:7px;letter-spacing:.14em}
+  .pcol .pi{padding:5px 8px;font-family:var(--mono);font-size:8.4px;color:var(--body);border-top:1px solid var(--line-2);
+    display:flex;gap:5px;align-items:baseline}
+  .pcol .pi::before{content:"▸";color:var(--accent);font-size:7px}
+
+  /* two-col */
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  /* TOC */
+  .toc-wrap{margin-top:8px}
+  .toc-row{display:flex;align-items:baseline;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .toc-no{font-family:var(--disp);font-weight:700;font-size:21px;color:var(--accent);width:34px;flex:none}
+  .toc-txt{flex:1}
+  .toc-txt .t{font-family:var(--kr);font-weight:600;font-size:15px;color:var(--ink)}
+  .toc-txt .d{font-size:10.3px;color:var(--muted);margin-top:1px}
+  .toc-dots{flex:1;border-bottom:1px dotted var(--faint);margin:0 6px;transform:translateY(-3px)}
+  .toc-pg{font-family:var(--mono);font-size:11px;color:var(--ink)}
+
+  .kpi-row{display:flex;gap:9px;margin:14px 0}
+  .kpi{flex:1;background:var(--cream);border:1px solid var(--line);border-radius:6px;padding:10px 8px;text-align:center}
+  .kpi .n{font-family:var(--disp);font-weight:700;font-size:25px;color:var(--accent);line-height:1}
+  .kpi .l{font-size:8.8px;color:var(--muted);margin-top:4px;letter-spacing:.02em}
+
+  .timeline{margin-top:6px}
+  .tl-row{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-2)}
+  .tl-when{font-family:var(--mono);font-size:8.6px;color:var(--accent);line-height:1.4}
+  .tl-when b{display:block;color:var(--ink);font-size:9.5px;font-weight:600}
+  .tl-what{font-size:10.4px;color:var(--body);line-height:1.5}
+  .tl-what b{color:var(--ink)}
+  .tag{font-family:var(--mono);font-size:7.5px;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:3px;margin-left:4px}
+</style>
+</head>
+<body>
+
+<!-- ════════ COVER ════════ -->
+<section class="sheet cover">
+  <div class="grid"></div>
+  <div class="frame"></div>
+  <div class="inner">
+    <div class="eyebrow">프로그래밍 언어 활용 · 최종 프로젝트 보고서</div>
+    <div class="spacer"></div>
+    <h1>AlgoBench<span class="dot">.</span></h1>
+    <div class="ko-title">로컬 알고리즘 벤치마킹 도구</div>
+    <div class="rule"></div>
+    <div class="sub">
+      외부 온라인 저지에 의존하지 않고, 로컬 문제 세트에 여러 풀이를 동일 조건으로 실행해
+      <b style="color:#e6edf6">정답 여부와 실행 시간</b>을 비교하는 순수 Java SE stand-alone 프로그램.
+      인터페이스 분리(ISP)를 축으로 한 확장 가능 채점 엔진의 설계·구현 기록.
+    </div>
+    <div class="chips">
+      <span class="chip">PURE JAVA SE</span>
+      <span class="chip">SWING GUI</span>
+      <span class="chip">SOLID · ISP</span>
+      <span class="chip">AI-ASSISTED · OPUS 4.8</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="meta">
+      <div><div class="k">학번</div><div class="v">202311516</div></div>
+      <div><div class="k">이름</div><div class="v">권창민</div></div>
+      <div><div class="k">제출일</div><div class="v">2026. 06. 07.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 목차 ════════ -->
+<section class="sheet">
+  <div class="chap-head">
+    <div class="chap-no">·</div>
+    <div class="chap-titles"><div class="ct-en">Table of Contents</div><h2>목차</h2></div>
+  </div>
+  <div class="toc-wrap">
+    <div class="toc-row"><div class="toc-no">1</div>
+      <div class="toc-txt"><div class="t">프로젝트 개요</div><div class="d">AlgoBench 소개 · 핵심 기능 · 실행 화면</div></div>
+      <div class="toc-dots"></div><div class="toc-pg">01</div></div>
+    <div class="toc-row"><div class="toc-no">2</div>
+      <div class="toc-txt"><div class="t">프로젝트 구조</div><div class="d">5단계 파이프라인 · 패키지 구조 · 다형성 · 실제 동작</div></div>
+      <div class="toc-dots"></div><div class="toc-pg">02</div></div>
+    <div class="toc-row"><div class="toc-no">3</div>
+      <div class="toc-txt"><div class="t">설계 의도</div><div class="d">인터페이스 분리와 SOLID · 리뷰 기반 설계 프로세스</div></div>
+      <div class="toc-dots"></div><div class="toc-pg">04</div></div>
+    <div class="toc-row"><div class="toc-no">4</div>
+      <div class="toc-txt"><div class="t">구현 방법 및 문제 해결</div><div class="d">AI 도구·마일스톤·문서화 · 디버깅 사례</div></div>
+      <div class="toc-dots"></div><div class="toc-pg">05</div></div>
+    <div class="toc-row"><div class="toc-no">5</div>
+      <div class="toc-txt"><div class="t">결론</div><div class="d">AI 협업 시대의 개발 — 고수준 추상화와 설계 능력</div></div>
+      <div class="toc-dots"></div><div class="toc-pg">07</div></div>
+    <div class="toc-row"><div class="toc-no">6</div>
+      <div class="toc-txt"><div class="t">AI와 협업 기록</div><div class="d">설계 수렴부터 구현·GUI까지의 세션 타임라인</div></div>
+      <div class="toc-dots"></div><div class="toc-pg">08</div></div>
+  </div>
+
+  <div class="kpi-row" style="margin-top:34px">
+    <div class="kpi"><div class="n">32</div><div class="l">Java 소스 · 7 패키지</div></div>
+    <div class="kpi"><div class="n">4</div><div class="l">확장 인터페이스</div></div>
+    <div class="kpi"><div class="n">8</div><div class="l">마일스톤 M0–M7</div></div>
+    <div class="kpi"><div class="n">2</div><div class="l">진입점 CLI · GUI</div></div>
+    <div class="kpi"><div class="n">0</div><div class="l">외부 의존성</div></div>
+  </div>
+  <div class="pageno"><span>AlgoBench 최종 보고서 · 권창민</span><span>목차</span></div>
+</section>
+
+<!-- ════════ 1. 프로젝트 개요 ════════ -->
+<section class="sheet">
+  <div class="chap-head">
+    <div class="chap-no">1</div>
+    <div class="chap-titles"><div class="ct-en">Project Overview</div><h2>프로젝트 개요</h2></div>
+  </div>
+
+  <p class="lead">AlgoBench는 백준·프로그래머스 같은 외부 온라인 저지에 의존하지 않고, 로컬에 직접 구성한
+  문제 세트에 여러 풀이 코드를 <b>동일한 조건</b>으로 실행해 <b>정답 여부와 실행 시간</b>을 한눈에 비교하는
+  학습용 stand-alone 벤치마킹 도구다.</p>
+
+  <p>같은 문제를 서로 다른 알고리즘·언어로 풀었을 때 어느 풀이가 정확하고 얼마나 빠른지 직접 확인하려면,
+  보통 풀이마다 수작업으로 입력을 넣어 보며 출력과 시간을 비교해야 한다. AlgoBench는 이 반복 작업을
+  <span class="accent">로드 → 실행 → 비교 → 결과 수집 → 리포팅</span>의 자동 파이프라인으로 묶어,
+  하나의 문제 파일과 여러 풀이를 주면 풀이별 통과/실패와 케이스별 실행 시간, 그리고 풀이 간 순위 요약까지
+  산출한다.</p>
+
+  <h3>핵심 특징</h3>
+  <ul>
+    <li><b>순수 Java SE.</b> Maven/Gradle 같은 빌드 도구와 런타임 외부 의존성이 전혀 없다. <em class="k">javac</em>/<em class="k">java</em>만으로 빌드·실행한다.</li>
+    <li><b>두 가지 풀이 실행 모델.</b> Java 풀이는 <em class="k">URLClassLoader</em>로 같은 JVM에서, Python·C++ 등은 <em class="k">ProcessBuilder</em>로 외부 프로세스에서 실행하되 <b>동일한 stdin→stdout 계약</b>을 따른다.</li>
+    <li><b>정확한 판정과 시간 측정.</b> 타임아웃·런타임 오류·오답을 구분해 판정하고, 실행 시간을 소수점 ms 정밀도로 측정한다.</li>
+    <li><b>병렬 채점과 안정성.</b> 스레드 풀로 여러 풀이를 동시에 채점하며, 한 풀이의 크래시가 전체 벤치마크를 멈추지 않도록 케이스 단위로 예외를 격리한다.</li>
+    <li><b>두 개의 진입점.</b> CLI 데모 러너와, 백준식 워크플로(문제 선택 → 소스 작성/첨부 → 채점)를 제공하는 Swing GUI를 같은 코어 위에 얹었다.</li>
+  </ul>
+
+  <figure>
+    <img src="img/gui-main.png" alt="AlgoBench Swing GUI">
+    <figcaption><b>그림 1.</b> AlgoBench Swing GUI — 좌측 문제 목록, 상단 문제 상세(A+B, 케이스 4개), 중앙 풀이 입력(에디터/파일/외부 명령), 하단 채점 결과표. 세 풀이를 한 번에 비교한 모습.</figcaption>
+  </figure>
+
+  <p>그림 1은 같은 문제(A+B)에 세 풀이를 올려 채점한 결과다. 정답 Java 풀이는 <span class="accent">ALL PASS (4/4)</span>,
+  버그가 있는 풀이는 <span style="color:var(--red);font-weight:600">FAIL (3/4)</span>로 첫 실패 사유까지 표시되며,
+  외부 Python 풀이도 동일한 표에서 함께 비교된다. 채점 기준(정확 일치 / 공백 무시)은 우상단에서 즉시 교체할 수 있다.</p>
+
+  <div class="pageno"><span>AlgoBench 최종 보고서 · 권창민 202311516</span><span><b>01</b></span></div>
+</section>
+
+<!-- ════════ 2. 프로젝트 구조 (a) ════════ -->
+<section class="sheet">
+  <div class="chap-head">
+    <div class="chap-no">2</div>
+    <div class="chap-titles"><div class="ct-en">Architecture &amp; Logic</div><h2>프로젝트 구조</h2></div>
+  </div>
+
+  <p class="lead">데이터는 한 방향으로 흐른다. 각 단계는 독립된 패키지이고, 변경 가능성이 높은 지점은
+  모두 인터페이스로 추상화돼 있어 엔진 수정 없이 구현체만 교체할 수 있다.</p>
+
+  <h3>동작 로직 — 5단계 파이프라인</h3>
+  <div class="pipe">
+    <div class="pstage"><div class="pn">loader</div><div class="pt">로드</div><div class="pc">ProblemLoader<br>→ Problem·TestCase</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pn">solution</div><div class="pt">실행</div><div class="pc">Solution.execute<br>(input, timeout)</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pn">compare</div><div class="pt">비교</div><div class="pc">OutputComparator<br>.matches()</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pn">engine</div><div class="pt">수집</div><div class="pc">JudgeEngine<br>+ GradingTask</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pn">result</div><div class="pt">리포팅</div><div class="pc">ResultLogger<br>+ Formatter</div></div>
+  </div>
+  <p>문제 파일을 파싱해 불변 <em class="k">Problem</em>으로 만든 뒤, 각 풀이를 케이스별로 실행하고, 그 출력을
+  비교기로 판정한다. 판정 결과는 <em class="k">GradingTask</em>(한 풀이 = 한 작업 단위)가 모아
+  <em class="k">BenchmarkResult</em>로 집계하며, <em class="k">JudgeEngine</em>이 스레드 풀로 이를 병렬 수행하고
+  결과를 메인 스레드에서 순차적으로 로깅한다.</p>
+
+  <h3>패키지 구조</h3>
+  <table class="tbl-mono">
+    <tr><th style="width:20%">패키지</th><th style="width:34%">핵심 타입</th><th>책임</th></tr>
+    <tr><td>domain</td><td>Problem, TestCase</td><td>불변 도메인 객체 — 문제와 테스트 케이스</td></tr>
+    <tr><td>loader</td><td>ProblemLoader</td><td>자체 텍스트 포맷 파싱(헤더 + <span class="mono">###</span> 케이스 블록)</td></tr>
+    <tr><td>solution</td><td>Solution «if», ExecutionResult,<br>JavaJarSolution, ExternalProcessSolution</td><td>풀이 실행의 다형성 지점 — JVM 내부 / 외부 프로세스</td></tr>
+    <tr><td>compare</td><td>OutputComparator «if», Exact·<br>WhitespaceNormalizing</td><td>채점 정책 — 출력 일치 판정 기준</td></tr>
+    <tr><td>engine</td><td>JudgeEngine, GradingTask</td><td>비동기 채점 오케스트레이션</td></tr>
+    <tr><td>result</td><td>BenchmarkResult, TestCaseResult,<br>ResultLogger·Formatter «if», Console·Csv·Summary</td><td>결과 데이터 + 콘솔/CSV/순위 요약 출력</td></tr>
+  </table>
+
+  <h3>핵심 다형성 — 네 개의 확장 인터페이스</h3>
+  <div class="poly">
+    <div class="pcol"><div class="ph"><small>INTERFACE</small>Solution</div>
+      <div class="pi">JavaJarSolution</div><div class="pi">ExternalProcessSolution</div></div>
+    <div class="pcol"><div class="ph"><small>INTERFACE</small>OutputComparator</div>
+      <div class="pi">ExactOutput</div><div class="pi">WhitespaceNorm.</div></div>
+    <div class="pcol"><div class="ph"><small>INTERFACE</small>ResultLogger</div>
+      <div class="pi">Console</div><div class="pi">Csv</div><div class="pi">Composite</div></div>
+    <div class="pcol"><div class="ph"><small>INTERFACE</small>ResultFormatter</div>
+      <div class="pi">CsvResultFormatter</div><div class="pi">+ Callable&lt;Result&gt;</div></div>
+  </div>
+  <p>엔진은 구체 클래스가 아니라 이 네 인터페이스에만 의존한다. 새 채점 기준이나 출력 형식이 필요하면
+  인터페이스를 구현한 클래스 하나를 추가해 주입하기만 하면 되고, <em class="k">JudgeEngine</em>·<em class="k">GradingTask</em>·
+  <em class="k">Solution</em>은 한 줄도 고치지 않는다.</p>
+
+  <div class="pageno"><span>AlgoBench 최종 보고서 · 권창민 202311516</span><span><b>02</b></span></div>
+</section>
+
+<!-- ════════ 2. 프로젝트 구조 (b) — 동작 예시 ════════ -->
+<section class="sheet">
+  <div class="chap-head" style="border-bottom-width:1px">
+    <div class="chap-no" style="font-size:26px">2</div>
+    <div class="chap-titles"><div class="ct-en">Architecture &amp; Logic — continued</div><h2 style="font-size:20px">실제 동작과 판정 로직</h2></div>
+  </div>
+
+  <h3>판정 우선순위</h3>
+  <p><em class="k">GradingTask</em>는 케이스마다 다음 순서로 가장 먼저 걸리는 조건을 판정으로 삼는다. 이 우선순위
+  덕분에 "왜 틀렸는가"가 항상 명확한 한 가지 사유로 환원된다.</p>
+  <table>
+    <tr><th style="width:16%">순위</th><th style="width:30%">조건</th><th style="width:24%">판정</th><th>의미</th></tr>
+    <tr><td>1</td><td class="mono">isTimedOut()</td><td style="color:var(--accent);font-weight:600">TIMEOUT</td><td>시간 제한 초과</td></tr>
+    <tr><td>2</td><td class="mono">exitCode ≠ 0</td><td style="color:var(--red);font-weight:600">RUNTIME_ERROR</td><td>비정상 종료 (stderr 요약 첨부)</td></tr>
+    <tr><td>3</td><td class="mono">!matches(actual)</td><td style="color:var(--red);font-weight:600">WRONG_ANSWER</td><td>출력 불일치</td></tr>
+    <tr><td>4</td><td class="mono">else</td><td style="color:var(--teal);font-weight:600">PASS</td><td>정상 종료 + 출력 일치</td></tr>
+  </table>
+  <div class="callout"><span class="lbl">안정성 — 예외 격리</span>
+  케이스 실행 중 캡슐화되지 않은 예외가 나도 <em class="k">call()</em>이 잡아 <span class="mono">EXCEPTION</span> 사유로
+  기록하고 다음 케이스로 진행한다. 풀이 하나의 크래시가 전체 벤치마크를 무너뜨리지 않는다.</div>
+
+  <h3>실제 채점 출력 (CLI 데모)</h3>
+  <p>정답·오답·무한루프(타임아웃)·외부 Python 풀이를 한 번에 채점한 실제 콘솔 출력이다. 마지막 비교 요약은
+  <b>통과 우선 → 총 시간 오름차순</b>으로 정렬하고 최속 정답을 <span class="accent">★</span>로 강조한다.</p>
+  <div class="console"><span class="dim">문제: A+B  (케이스 4개, 시간 제한 2000ms)</span>
+<span class="hd">============================ 벤치마크 비교 요약 ============================</span>
+순위   풀이                       결과     통과        총시간(ms)  비고
+---------------------------------------------------------------------------
+1    CorrectSolution          <span class="ok">PASS</span>   (4/4)         3.677  <span class="star">★ 최속 정답</span>
+2    correct_solution.py      <span class="ok">PASS</span>   (4/4)       117.039
+3    WrongSolution            <span class="bad">FAIL</span>   (3/4)         9.089  WRONG_ANSWER
+4    TimeoutSolution          <span class="bad">FAIL</span>   (0/4)      8001.897  TIMEOUT: 2000ms 초과
+<span class="hd">===========================================================================</span></div>
+
+  <p>같은 결과는 <em class="k">reports/result.csv</em>로도 기록되며(헤더 + 풀이별 1행), GUI에서는 아래 그림처럼
+  풀이별 요약표·케이스표·케이스 상세(기대/실제 출력)로 펼쳐진다.</p>
+
+  <figure class="half">
+    <img src="img/gui-results.png" alt="채점 결과 패널">
+    <figcaption><b>그림 2.</b> 결과 패널 — 좌측 풀이 요약, 우상단 케이스별 PASS/시간, 우하단 선택 케이스의 기대/실제 출력 비교.</figcaption>
+  </figure>
+
+  <div class="pageno"><span>AlgoBench 최종 보고서 · 권창민 202311516</span><span><b>03</b></span></div>
+</section>
+
+<!-- ════════ 3. 설계 의도 ════════ -->
+<section class="sheet">
+  <div class="chap-head">
+    <div class="chap-no">3</div>
+    <div class="chap-titles"><div class="ct-en">Design Intent</div><h2>설계 의도</h2></div>
+  </div>
+
+  <p class="lead">벤치마킹 도구의 본질은 "다양함을 같은 잣대로 비교"하는 것이다. 그런데 그 잣대 자체 —
+  채점 기준과 출력 방식 — 가 가장 자주 바뀐다. 이 가변성을 어디에 가두느냐가 설계의 핵심이었다.</p>
+
+  <h3>왜 인터페이스 분리(ISP)였는가</h3>
+  <p>여러 문제를 풀다 보면 채점 방식과 기준이 제각각이다. 어떤 문제는 공백·줄바꿈까지 정확히 맞아야 하고,
+  어떤 문제는 토큰만 같으면 정답이며, 대소문자를 무시해야 할 때도 있다. 결과를 콘솔로만 볼 때도, CSV로 남겨야
+  할 때도 있다. 만약 이 분기들을 <em class="k">JudgeEngine</em> 내부의 조건문으로 처리했다면, 기준이 하나 늘 때마다
+  엔진을 수정해야 하고 — 그때마다 이미 검증된 채점 로직 전체가 회귀 위험에 노출된다.</p>
+  <p>그래서 <b>변하는 것</b>(비교 정책 <em class="k">OutputComparator</em>, 출력 정책 <em class="k">ResultLogger</em>/<em class="k">ResultFormatter</em>,
+  실행 방식 <em class="k">Solution</em>)과 <b>변하지 않는 것</b>(채점 오케스트레이션 <em class="k">JudgeEngine</em>)을
+  인터페이스 경계로 갈라 두었다. 새 기준은 작은 구현 클래스 하나의 <b>추가</b>로 끝나고, 기존 코드는 닫혀 있다.
+  유지보수 비용이 "전 영역 회귀 테스트"에서 "신규 클래스 단위 검증"으로 줄어든다.</p>
+
+  <h3>SOLID 적용 매핑</h3>
+  <table>
+    <tr><th style="width:8%">원칙</th><th style="width:34%">적용 지점</th><th>효과</th></tr>
+    <tr><td><b>S</b>RP</td><td>로드/실행/비교/수집/리포팅을 패키지로 분리</td><td>한 클래스가 한 가지 이유로만 바뀐다</td></tr>
+    <tr><td><b>O</b>CP</td><td>새 Comparator·Logger는 추가만, 엔진은 불변</td><td>확장에 열리고 수정에 닫힌다</td></tr>
+    <tr><td><b>L</b>SP</td><td>JavaJar·ExternalProcess가 동일 stdin→stdout 계약 준수</td><td>엔진이 구현체를 구분 없이 다룬다</td></tr>
+    <tr><td><b>I</b>SP</td><td>Comparator·Logger·Formatter·Solution을 작은 단일 목적 인터페이스로 분할</td><td>구현체가 불필요한 메서드에 끌려가지 않는다</td></tr>
+    <tr><td><b>D</b>IP</td><td>JudgeEngine이 구체 클래스가 아닌 인터페이스에 의존, Logger는 생성자 주입</td><td>정책을 외부에서 갈아끼운다</td></tr>
+  </table>
+
+  <h3>리뷰 기반 설계 프로세스</h3>
+  <p>설계는 "한 번에 그린 다이어그램"이 아니라 <b>반복 리뷰로 수렴</b>시켰다. 절차는 일관됐다 —
+  ① 프롬프트에 기능 요구(FR)와 제약(NFR)을 명확히 못박고, ② 내가 먼저 구상한 클래스 다이어그램을 기준안으로
+  제시한 뒤, ③ 그 안을 AI에게 비판적으로 검토받아 결함을 찾아 고치고, ④ 수정안을 다시 다른 시각으로 재평가하는
+  교차 리뷰를 돌렸다.</p>
+  <div class="callout"><span class="lbl">설계 수렴 — 계획 문서 계보</span>
+  <b>plan.md → codex → claude → codex2 → claude2 → codex3 → claude3</b> — 동일 설계를 서로 다른 모델로 7차례
+  교차 평가했다. 이 과정에서 같은 JVM Java 풀이의 강제 종료 불가, 자식 프로세스 인코딩(MS949↔UTF-8),
+  전역 스트림 충돌, CSV 누적 문제 등 <b>10여 건의 구조적 결함을 구현 전에</b> 잡아냈다. "더 이상 새 결함이 나오지
+  않는다"는 판단이 선 시점에 비로소 구현에 착수했다.</div>
+  <p>핵심은, 비싼 자원(구현·디버깅 시간)을 쓰기 전에 값싼 자원(설계 리뷰)으로 결함을 제거했다는 점이다.
+  명확한 요구 명세와 기준 다이어그램이 있었기에, 리뷰는 "무엇을 만들지"가 아니라 "이 구조의 약점이 무엇인지"에
+  집중할 수 있었다.</p>
+
+  <div class="pageno"><span>AlgoBench 최종 보고서 · 권창민 202311516</span><span><b>04</b></span></div>
+</section>
+
+<!-- ════════ 4. 구현 방법 및 문제 해결 (a) ════════ -->
+<section class="sheet">
+  <div class="chap-head">
+    <div class="chap-no">4</div>
+    <div class="chap-titles"><div class="ct-en">Implementation &amp; Problem Solving</div><h2>구현 방법 및 문제 해결</h2></div>
+  </div>
+
+  <p class="lead">구현의 목표는 "빠르게 많이"가 아니라 "오류를 최소화하며 일관되게"였다. 도구·작업 단위·문서화의
+  세 축으로 이를 떠받쳤다.</p>
+
+  <h3>AI 도구와 스킬</h3>
+  <ul>
+    <li><b>Claude Opus 4.8</b>(유료 모델)을 주 구현 엔진으로, 설계 교차 평가에는 GPT-5.5도 병행했다.</li>
+    <li><b>Superpowers 스킬</b>을 단계별로 적용했다. <em class="k">brainstorming</em>으로 구현 전 요구·설계를 발산·정리하고,
+      <em class="k">TDD</em> 지향으로 검증 우선의 작업 흐름을 잡았다. 다만 본 프로젝트는 "테스트 프레임워크 없이
+      Main 데모 러너 E2E로 검증"이라는 제약이 있어, JUnit 대신 <b>컴파일 + 스크래치 검증 + E2E 실행</b>으로
+      TDD의 정신(작은 단위·즉시 검증)만 살렸다.</li>
+  </ul>
+
+  <h3>마일스톤 단계화 — 토큰 한도와 일관성</h3>
+  <p>LLM은 한 번에 다룰 수 있는 맥락(토큰)에 한도가 있어, 작업을 크게 잡으면 도중에 끊겨 앞뒤 일관성이
+  깨지기 쉽다. 이를 막기 위해 전체 구현을 의존성 기준 <b>8개 마일스톤(M0–M7)</b>으로 쪼개, 한 세션에서 다루는
+  작업량을 항상 "끝까지 검증 가능한 크기"로 유지했다.</p>
+  <table class="tbl-mono">
+    <tr><th style="width:13%">단계</th><th>내용</th></tr>
+    <tr><td>M0</td><td>프로젝트 골격 · build.ps1 · README</td></tr>
+    <tr><td>M1</td><td>도메인(Problem·TestCase) + 비교기 3종</td></tr>
+    <tr><td>M2 · M3 · M4</td><td>로더+샘플문제 / 결과+로거+요약 / 풀이 실행(JVM·외부)</td></tr>
+    <tr><td>M5 · M6</td><td>엔진(GradingTask·JudgeEngine) / Main + 샘플 풀이</td></tr>
+    <tr><td>M7</td><td>End-to-End 검증 (정답·오답·타임아웃·외부 다형성)</td></tr>
+  </table>
+
+  <h3>전 과정 문서화 — 세션을 넘는 맥락 유지</h3>
+  <p>모든 계획과 결정을 <em class="k">.md</em> 파일로 남겨, 세션이 바뀌어도 Claude Code가 동일한 맥락을 이어받게 했다.
+  <em class="k">plan_claude3.md</em>(설계의 단일 진실 공급원), <em class="k">MILESTONES.md</em>(단계 분해),
+  <em class="k">CLAUDE.md</em>(작업 가이드·비자명 규칙), <em class="k">ai_rec.md</em>(전 대화·행동 기록)가 그것이다.
+  또한 프로젝트 구조 전체를 <b>HTML 문서로 시각화</b>(<em class="k">algobench_visual.html</em>,
+  <em class="k">docs/*.html</em>)해, 사람이 구조를 직접 파악·관리하기 쉽게 했다 — 본 보고서의 그림들도 그 연장선이다.</p>
+
+  <div class="pageno"><span>AlgoBench 최종 보고서 · 권창민 202311516</span><span><b>05</b></span></div>
+</section>
+
+<!-- ════════ 4. 구현 방법 및 문제 해결 (b) — 디버깅 ════════ -->
+<section class="sheet">
+  <div class="chap-head" style="border-bottom-width:1px">
+    <div class="chap-no" style="font-size:26px">4</div>
+    <div class="chap-titles"><div class="ct-en">Implementation — continued</div><h2 style="font-size:20px">문제 해결 — 체계적 디버깅 사례</h2></div>
+  </div>
+
+  <p class="lead">실제 마찰의 대부분은 알고리즘이 아니라 <b>플랫폼 경계</b>(Windows 인코딩, cmd 제약, JVM 전역 상태)에서
+  나왔다. 증상을 격리(probe)해 근본 원인을 짚고 고치는 방식으로 풀었다.</p>
+
+  <table>
+    <tr><th style="width:22%">증상</th><th style="width:34%">근본 원인</th><th>해결</th></tr>
+    <tr><td>자식 JVM 풀이의 한글 출력 깨짐</td><td>Java 18+ 파이프 출력은 <span class="mono">stdout.encoding</span>을 따르는데 Windows 기본이 <span class="mono">MS949</span></td><td><span class="mono">-Dstdout.encoding=UTF-8</span> 인자를 자동 삽입</td></tr>
+    <tr><td>GUI 한글이 □(두부)로 표시</td><td><span class="mono">Segoe UI</span>·<span class="mono">Consolas</span>에 한글 글리프 없음(<span class="mono">canDisplay('가')=false</span>)</td><td>UI 폰트를 <span class="mono">Malgun Gothic</span> / 논리 폰트로 교체</td></tr>
+    <tr><td>.bat 실행 시 명령이 토막남 (<span class="mono">java→va</span>)</td><td>파일이 <b>LF</b> 줄바꿈 → cmd가 라인을 잘못 끊음</td><td><b>CRLF</b>(UTF-8 no-BOM)로 변환</td></tr>
+    <tr><td>리다이렉트 입력 시 메뉴 무한루프</td><td><span class="mono">chcp 65001</span> 상태에서 파이프 stdin은 <span class="mono">set /p</span>가 빈 값 반환</td><td>비대화식 인자 모드 + EOF 가드 추가</td></tr>
+    <tr><td>javac가 한글·공백 경로에서 실패</td><td>argfile 절대경로의 공백(<span class="mono">자프 과제</span>) 토막 + cmd glob 미확장</td><td><span class="mono">for</span> 열거 + 따옴표 + delayed expansion</td></tr>
+    <tr><td>Java 풀이 병렬 시 출력 섞임</td><td><span class="mono">System.out</span>이 JVM 전역 — 스트림 교체가 충돌</td><td>교체 구간을 <span class="mono">static</span> 락으로 직렬화</td></tr>
+  </table>
+
+  <div class="callout"><span class="lbl">설계로 흡수한 플랫폼 한계</span>
+  같은 JVM에서 도는 Java 풀이는 무한루프를 <b>강제 종료할 수 없다</b>(같은 프로세스이므로). 이는 데몬 스레드 +
+  <span class="mono">Future.get(timeout)</span> best-effort로 "타임아웃 표시는 하되 메인 종료는 막지 않는" 방식으로
+  처리하고, 신뢰할 수 없는 Java 코드는 외부 JVM(<em class="k">ExternalProcessSolution</em>)으로 돌리도록 안내했다.
+  한계를 숨기지 않고 문서·구조에 명시한 것이 핵심이다.</div>
+
+  <h3>검증 결과</h3>
+  <p>최종 E2E 데모(<em class="k">build.ps1</em>)에서 네 시나리오가 모두 의도대로 동작했다 — 정답 풀이 ALL PASS,
+  버그 풀이의 특정 케이스 WRONG_ANSWER(기대 7 / 실제 13), 무한루프 풀이의 케이스별 TIMEOUT(이후에도 프로그램
+  계속 진행), 외부 Python 풀이 ALL PASS(다형성 확인). 실행 시간은 0ms로 뭉개지지 않고 소수 ms로 측정됐고,
+  CSV는 매 실행 새로 기록되며 한글이 정상 보존됐다.</p>
+
+  <div class="pageno"><span>AlgoBench 최종 보고서 · 권창민 202311516</span><span><b>06</b></span></div>
+</section>
+
+<!-- ════════ 5. 결론 ════════ -->
+<section class="sheet">
+  <div class="chap-head">
+    <div class="chap-no">5</div>
+    <div class="chap-titles"><div class="ct-en">Conclusion</div><h2>결론 — AI 협업 시대의 개발</h2></div>
+  </div>
+
+  <p class="lead">이 프로젝트를 포함해 Claude Code·Codex 같은 도구로 개발하며 얻은 결론은 하나로 모인다 —
+  <b>인간의 손은 저수준 구현이 아니라 고수준 구조에 놓여야 한다.</b></p>
+
+  <h3>저수준의 세세한 관리는 이제 병목이다</h3>
+  <p>코드 한 줄, 구현 디테일을 사람이 일일이 관리하는 방식은 오히려 개발의 병목을 만든다.
+  Gemma·Qwen-Coder 같은 경량 LLM이나 Gemini 2.5 Flash 수준에서는 신뢰도 때문에 사람이 산출물을
+  꼼꼼히 들여다봐야 할 수 있다. 그러나 <b>GPT-5.5 xhigh, Opus 4.8 xhigh~max</b> 급 모델은
+  <b>명확한 프롬프트</b>만 주어지면 단순·정형 기능을 사람보다 빠르고 정확하게 구현한다. 이 프로젝트에서도
+  파서·로거·프로세스 실행 같은 정형 코드는 LLM이 맡았을 때 구현 시간이 줄고 품질이 올라갔다.</p>
+
+  <h3>그래서 무엇에 집중해야 하는가</h3>
+  <p>결론적으로, <b>Critical한 기능을 제외한 영역은 구조화·추상화 같은 고수준 관리에 집중</b>하고, 단순 기능의
+  구현 자체는 LLM에 위임하는 편이 개발 시간 단축과 코드 품질 향상을 동시에 가져온다. 인간이 코드를 직접
+  타이핑하는 능력의 가치는 빠르게 줄고 있다.</p>
+  <p>한편 소프트웨어 구조는 사용자의 변화와 트렌드 같은 <b>가변적 요소에서 벗어나기 어렵다.</b> 요구는 끊임없이
+  바뀌고, 그 변화를 견디는 것은 결국 잘 그어진 경계다. 그러므로 우리가 더 깊이 단련해야 할 것은
+  <b>소프트웨어 설계 능력</b>이다 — 인터페이스를 분리하고, 책임을 나누고, 기능 간의 관계를 설정해
+  프로젝트에 <b>유지보수 용이성과 확장의 유연함</b>을 부여하는 능력 말이다.</p>
+
+  <div class="callout"><span class="lbl">한 문장 요약</span>
+  AlgoBench는 그 명제의 작은 증명이다 — 채점 기준이 바뀌어도 엔진은 닫혀 있고, 구현의 상당 부분은 AI가
+  채웠지만, <b>무엇을·어떤 경계로 만들지를 정한 설계만은 사람이 끝까지 쥐고 있었다.</b> 그 설계가 있었기에
+  AI의 속도가 혼돈이 아니라 결과물이 됐다.</div>
+
+  <div class="pageno"><span>AlgoBench 최종 보고서 · 권창민 202311516</span><span><b>07</b></span></div>
+</section>
+
+<!-- ════════ 6. AI 협업 기록 ════════ -->
+<section class="sheet">
+  <div class="chap-head">
+    <div class="chap-no">6</div>
+    <div class="chap-titles"><div class="ct-en">Collaboration Log</div><h2>AI와 협업 기록</h2></div>
+  </div>
+
+  <p class="lead"><em class="k">ai_rec.md</em>에 시간순으로 누적된 전 대화·행동 기록을 한 장으로 요약한다.
+  설계 수렴(세션 1–6) → 단계 구현(세션 7) → JAR·GUI 확장(세션 8)의 흐름이다.</p>
+
+  <div class="timeline">
+    <div class="tl-row"><div class="tl-when"><b>세션 1</b>06-03<br>Opus 4.8</div>
+      <div class="tl-what">설계도 PDF 판독 → 요구(FR-01~07 / NFR-01~06)·클래스 구조 파악. 비워진 결정 4건을 질의해
+        <b>빌드 방식·Java 실행 계약·문제 포맷·데모 산출물</b> 확정. <em class="k">plan.md</em>·<em class="k">ai_rec.md</em>·<em class="k">CLAUDE.md</em> 생성.</div></div>
+    <div class="tl-row"><div class="tl-when"><b>세션 2–6</b>06-03<br>Opus·GPT5.5</div>
+      <div class="tl-what"><b>교차 리뷰로 설계 수렴.</b> plan → codex → claude → … → <b>plan_claude3</b>까지 7차 평가.
+        <span class="mono">System.exit</span>·인코딩(MS949↔UTF-8)·전역 스트림·CSV 누적 등 구조 결함 10여 건을 구현 전 제거. <span class="tag">수렴 완료</span></div></div>
+    <div class="tl-row"><div class="tl-when"><b>세션 7</b>06-06<br>Opus 4.8</div>
+      <div class="tl-what"><b>마일스톤 단계 구현 M0–M7.</b> 골격 → 도메인·비교기 → 로더·결과·풀이실행 → 엔진 → Main·샘플.
+        각 단계 컴파일 + 스크래치 검증. 최종 E2E: 정답/오답/타임아웃/Python 다형성 전부 통과. <span class="tag">구현 완료</span></div></div>
+    <div class="tl-row"><div class="tl-when"><b>세션 7</b>06-06</div>
+      <div class="tl-what">구현 계획·마일스톤을 단일 HTML로 시각화(<em class="k">algobench_visual.html</em>) — 블루프린트 테마,
+        파이프라인·다형성·의존성 DAG·검증 표 포함.</div></div>
+    <div class="tl-row"><div class="tl-when"><b>세션 8</b>06-06<br>Opus 4.8</div>
+      <div class="tl-what"><b>JAR 빌드 + 디버깅 콘솔 <em class="k">algobench.bat</em>.</b> 대화식 메뉴·비대화식 모드. 디버깅:
+        LF→CRLF 토막, <span class="mono">chcp</span>+리다이렉트 무한루프, 한글·공백 경로 javac 토막을 각각 격리·해결.</div></div>
+    <div class="tl-row"><div class="tl-when"><b>세션 8</b>06-06</div>
+      <div class="tl-what"><b>백준식 Swing GUI 구현</b>(<em class="k">algobench.gui</em>, 코어 무수정). 문제 선택 → 소스 작성/첨부 →
+        다중 풀이 채점. 한글 폰트 두부 현상(<span class="mono">canDisplay</span> probe)으로 격리 후 Malgun Gothic으로 수정.
+        구조 시각화 <em class="k">docs/algobench-overview.html</em> 작성.</div></div>
+  </div>
+
+  <div class="callout" style="margin-top:14px"><span class="lbl">협업에서 배운 것</span>
+  AI는 "무엇을 만들지"를 정해 주면 빠르게 만들지만, "무엇을 만들지"와 "어떤 한계를 감수할지"를 정하는 일은
+  사람의 몫이었다. 기록(<em class="k">ai_rec.md</em>)과 계획 문서(<em class="k">.md</em>)가 세션을 잇는 기억이 되어,
+  맥락이 끊겨도 설계 의도가 유지됐다. 본 프로젝트의 모든 산출물 — 코드·문서·시각화·이 보고서 — 가 그 협업의 결과다.</div>
+
+  <div class="pageno"><span>AlgoBench 최종 보고서 · 권창민 202311516</span><span><b>08</b></span></div>
+</section>
+
+</body>
+</html>

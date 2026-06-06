@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlgoBench — 프로젝트 구조 문서</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --surface:#fff; --surface-alt:#fafbfc; --border:#e1e4e8;
+    --text:#1f2328; --muted:#6e7781; --accent:#2563eb; --accent-d:#1d4ed8;
+    --green:#16a34a; --red:#dc2626; --amber:#d97706; --violet:#7c3aed; --cyan:#0891b2;
+    --sel:#dceafe; --shadow:0 1px 3px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.04);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--text);line-height:1.65;
+    font-family:'Malgun Gothic','맑은 고딕','Segoe UI',system-ui,sans-serif;
+    font-size:15px;
+  }
+  code,pre,.mono{font-family:'Consolas','D2Coding',ui-monospace,monospace}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* layout */
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  header.hero{
+    background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 55%,#3b82f6 100%);
+    color:#fff;padding:56px 0 48px;
+  }
+  .hero h1{font-size:44px;margin:0 0 6px;letter-spacing:-1px;font-weight:800}
+  .hero .tag{font-size:18px;opacity:.92;margin:0 0 26px;font-weight:500}
+  .badges{display:flex;flex-wrap:wrap;gap:10px}
+  .badge{
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);
+    padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;backdrop-filter:blur(4px)
+  }
+
+  /* sticky nav */
+  nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  nav .wrap{display:flex;gap:4px;flex-wrap:wrap;padding:10px 24px}
+  nav a{color:var(--muted);font-size:13px;font-weight:600;padding:6px 12px;border-radius:8px}
+  nav a:hover{background:var(--sel);color:var(--accent-d);text-decoration:none}
+
+  section{padding:44px 0;border-bottom:1px solid var(--border)}
+  section:last-child{border-bottom:none}
+  h2{font-size:27px;margin:0 0 6px;letter-spacing:-.5px;display:flex;align-items:center;gap:12px}
+  h2 .n{font-size:14px;color:#fff;background:var(--accent);width:30px;height:30px;
+    border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+  h3{font-size:18px;margin:30px 0 10px}
+  .lead{color:var(--muted);margin:0 0 22px;font-size:16px;max-width:760px}
+  p{margin:0 0 14px}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:22px;box-shadow:var(--shadow)}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:880px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+  .pkg{border-radius:14px;padding:18px;border:1px solid var(--border);background:var(--surface);
+    box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .pkg::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--accent)}
+  .pkg h4{margin:0 0 4px;font-size:16px;font-family:'Consolas',monospace}
+  .pkg .role{color:var(--muted);font-size:13px;margin:0 0 10px}
+  .pkg ul{margin:0;padding-left:18px;font-size:13px;color:var(--text)}
+  .pkg li{margin:2px 0}
+  .pkg li code{background:var(--surface-alt);padding:1px 5px;border-radius:5px;font-size:12px}
+  .pkg.c-loader::before{background:var(--cyan)} .pkg.c-domain::before{background:#0d9488}
+  .pkg.c-solution::before{background:var(--violet)} .pkg.c-compare::before{background:var(--amber)}
+  .pkg.c-engine::before{background:var(--red)} .pkg.c-result::before{background:var(--green)}
+  .pkg.c-gui::before{background:var(--accent)}
+
+  table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:12px;
+    overflow:hidden;box-shadow:var(--shadow);font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:var(--surface-alt);font-weight:700;font-size:13px}
+  tr:last-child td{border-bottom:none}
+  td code{background:var(--surface-alt);padding:1px 6px;border-radius:5px;font-size:12.5px}
+
+  pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:18px 20px;overflow:auto;
+    font-size:13px;line-height:1.55;box-shadow:var(--shadow);margin:0 0 14px}
+  pre .k{color:#7dd3fc}.t{color:#fcd34d}.c{color:#64748b}.s{color:#86efac}.h{color:#f9a8d4}
+  .tree{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;
+    font-family:'Consolas',monospace;font-size:13.5px;line-height:1.85;box-shadow:var(--shadow);overflow:auto}
+  .tree .d{color:var(--accent);font-weight:700}
+  .tree .f{color:var(--text)}
+  .tree .cm{color:var(--muted)}
+  .tree .new{background:var(--sel);border-radius:4px;padding:0 4px}
+
+  .note{border-left:4px solid var(--amber);background:#fffbeb;padding:12px 16px;border-radius:0 10px 10px 0;
+    font-size:14px;margin:14px 0}
+  .note.blue{border-color:var(--accent);background:#eff6ff}
+  .note.green{border-color:var(--green);background:#f0fdf4}
+  .note b{color:var(--text)}
+
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700}
+  .pill.pass{background:#dcfce7;color:#15803d}.pill.fail{background:#fee2e2;color:#b91c1c}
+  .pill.to{background:#fef3c7;color:#b45309}.pill.new{background:var(--sel);color:var(--accent-d)}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  @media(max-width:880px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;box-shadow:var(--shadow)}
+  .kpi .v{font-size:30px;font-weight:800;color:var(--accent);letter-spacing:-1px}
+  .kpi .l{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+  svg{max-width:100%;height:auto;display:block}
+  .figcap{color:var(--muted);font-size:13px;text-align:center;margin:8px 0 0}
+  footer{padding:30px 0;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>AlgoBench</h1>
+    <p class="tag">로컬 알고리즘 벤치마킹 — 순수 Java SE, 단일 머신 stand-alone</p>
+    <div class="badges">
+      <span class="badge">☕ Pure Java SE 17+</span>
+      <span class="badge">🚫 빌드도구·외부의존성 0</span>
+      <span class="badge">🧩 5단계 파이프라인</span>
+      <span class="badge">🖥️ CLI + Swing GUI</span>
+      <span class="badge">⚙️ javac · java 직접</span>
+    </div>
+  </div>
+</header>
+
+<nav><div class="wrap">
+  <a href="#intro">개요</a>
+  <a href="#pipeline">아키텍처</a>
+  <a href="#packages">패키지 맵</a>
+  <a href="#tree">디렉토리</a>
+  <a href="#classes">핵심 클래스</a>
+  <a href="#solution">Solution 다형성</a>
+  <a href="#sequence">채점 흐름</a>
+  <a href="#gui">GUI 계층</a>
+  <a href="#format">문제 포맷</a>
+  <a href="#verdict">판정 규칙</a>
+  <a href="#build">빌드·실행</a>
+  <a href="#nfr">제약·NFR</a>
+</div></nav>
+
+<!-- ───────── 개요 ───────── -->
+<section id="intro"><div class="wrap">
+  <h2><span class="n">1</span>개요</h2>
+  <p class="lead">외부 온라인 저지(BOJ 등)에 의존하지 않고, <b>로컬 문제 세트</b>에 여러 풀이 코드를
+  동일 조건으로 실행해 <b>정답 여부 + 실행 시간</b>을 비교하는 학습용 도구.</p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v">32</div><div class="l">Java 소스 파일</div></div>
+    <div class="kpi"><div class="v">7</div><div class="l">패키지 (코어 6 + gui)</div></div>
+    <div class="kpi"><div class="v">5</div><div class="l">파이프라인 단계</div></div>
+    <div class="kpi"><div class="v">0</div><div class="l">외부 런타임 의존성</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:22px">
+    <div class="card">
+      <h3 style="margin-top:0">무엇을 하나</h3>
+      <p style="margin-bottom:0">하나의 문제(입력/기대출력 케이스 묶음)에 대해 Java <code>.class</code>/<code>.jar</code>
+      또는 Python 등 외부 실행 풀이를 <b>같은 stdin/stdout 계약</b>으로 돌려, 케이스별 통과 여부와
+      소수점 ms 단위 실행 시간을 측정·비교하고 콘솔·CSV·GUI로 리포팅한다.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">설계 철학</h3>
+      <p style="margin-bottom:0"><b>책임 분리 + 확장점</b>. 데이터가 한 방향으로 흐르는 파이프라인이고,
+      변경 가능성 높은 지점(<code>Solution</code>·<code>OutputComparator</code>·<code>ResultLogger</code>)은
+      인터페이스로 추상화 — <b>엔진 수정 없이</b> 구현체만 추가하면 확장된다.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ───────── 파이프라인 ───────── -->
+<section id="pipeline"><div class="wrap">
+  <h2><span class="n">2</span>아키텍처 — 5단계 파이프라인</h2>
+  <p class="lead">로드 → 실행 → 비교 → 결과 수집 → 리포팅. 각 단계가 독립 패키지이며 한 방향으로만 의존한다.</p>
+
+  <svg viewBox="0 0 1000 230" role="img" aria-label="파이프라인 다이어그램">
+    <defs>
+      <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/>
+      </marker>
+      <style>
+        .box{rx:12;ry:12;stroke-width:2}
+        .lbl{font:700 15px 'Malgun Gothic',sans-serif;fill:#fff}
+        .pkgname{font:600 11px Consolas,monospace}
+        .sub{font:400 11px 'Malgun Gothic',sans-serif;fill:#fff;opacity:.9}
+      </style>
+    </defs>
+    <!-- stages -->
+    <g>
+      <rect class="box" x="10"  y="60" width="170" height="78" fill="#0891b2" stroke="#0e7490"/>
+      <text class="lbl" x="95"  y="92" text-anchor="middle">① 로드</text>
+      <text class="sub" x="95"  y="113" text-anchor="middle">텍스트 → Problem</text>
+      <text class="pkgname" x="95" y="152" text-anchor="middle" fill="#0891b2">loader · domain</text>
+
+      <rect class="box" x="210" y="60" width="170" height="78" fill="#7c3aed" stroke="#6d28d9"/>
+      <text class="lbl" x="295" y="92" text-anchor="middle">② 실행</text>
+      <text class="sub" x="295" y="113" text-anchor="middle">stdin → stdout</text>
+      <text class="pkgname" x="295" y="152" text-anchor="middle" fill="#7c3aed">solution</text>
+
+      <rect class="box" x="410" y="60" width="170" height="78" fill="#d97706" stroke="#b45309"/>
+      <text class="lbl" x="495" y="92" text-anchor="middle">③ 비교</text>
+      <text class="sub" x="495" y="113" text-anchor="middle">기대 vs 실제</text>
+      <text class="pkgname" x="495" y="152" text-anchor="middle" fill="#d97706">compare</text>
+
+      <rect class="box" x="610" y="60" width="170" height="78" fill="#dc2626" stroke="#b91c1c"/>
+      <text class="lbl" x="695" y="92" text-anchor="middle">④ 결과 수집</text>
+      <text class="sub" x="695" y="113" text-anchor="middle">병렬 채점</text>
+      <text class="pkgname" x="695" y="152" text-anchor="middle" fill="#dc2626">engine</text>
+
+      <rect class="box" x="810" y="60" width="170" height="78" fill="#16a34a" stroke="#15803d"/>
+      <text class="lbl" x="895" y="92" text-anchor="middle">⑤ 리포팅</text>
+      <text class="sub" x="895" y="113" text-anchor="middle">콘솔·CSV·GUI</text>
+      <text class="pkgname" x="895" y="152" text-anchor="middle" fill="#16a34a">result</text>
+    </g>
+    <!-- arrows -->
+    <line x1="182" y1="99" x2="206" y2="99" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arr)"/>
+    <line x1="382" y1="99" x2="406" y2="99" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arr)"/>
+    <line x1="582" y1="99" x2="606" y2="99" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arr)"/>
+    <line x1="782" y1="99" x2="806" y2="99" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arr)"/>
+    <text x="500" y="30" text-anchor="middle" font-weight="700" font-size="14" fill="#475569">데이터 흐름 (단방향)</text>
+  </svg>
+  <p class="figcap">그림 1. <code>Main</code>(CLI) 또는 <code>AlgoBenchApp</code>(GUI)이 이 파이프라인을 호출한다.</p>
+</div></section>
+
+<!-- ───────── 패키지 맵 ───────── -->
+<section id="packages"><div class="wrap">
+  <h2><span class="n">3</span>패키지 맵</h2>
+  <p class="lead"><code>src/algobench/</code> 아래 7개 패키지. 색 막대 = 파이프라인 단계 대응.</p>
+
+  <div class="grid g3">
+    <div class="pkg c-domain"><h4>domain/</h4><p class="role">불변 도메인 객체</p>
+      <ul><li><code>Problem</code> — 제목·제한·케이스</li><li><code>TestCase</code> — 입력/기대출력</li></ul></div>
+
+    <div class="pkg c-loader"><h4>loader/</h4><p class="role">자체 텍스트 포맷 파싱</p>
+      <ul><li><code>ProblemLoader</code> — 헤더+<code>###</code> 케이스 파싱</li></ul></div>
+
+    <div class="pkg c-solution"><h4>solution/</h4><p class="role">핵심 다형성 지점</p>
+      <ul><li><code>Solution</code> (interface)</li><li><code>JavaJarSolution</code> — 같은 JVM</li>
+      <li><code>ExternalProcessSolution</code> — 외부 프로세스</li><li><code>ExecutionResult</code></li></ul></div>
+
+    <div class="pkg c-compare"><h4>compare/</h4><p class="role">채점 정책</p>
+      <ul><li><code>OutputComparator</code> (interface)</li><li><code>ExactOutputComparator</code></li>
+      <li><code>WhitespaceNormalizingComparator</code></li></ul></div>
+
+    <div class="pkg c-engine"><h4>engine/</h4><p class="role">비동기 채점 오케스트레이션</p>
+      <ul><li><code>JudgeEngine</code> — <code>ExecutorService</code> 풀</li>
+      <li><code>GradingTask</code> — <code>Callable&lt;BenchmarkResult&gt;</code></li></ul></div>
+
+    <div class="pkg c-result"><h4>result/</h4><p class="role">불변 결과 + 리포팅</p>
+      <ul><li><code>BenchmarkResult</code> · <code>TestCaseResult</code></li>
+      <li><code>Console/Csv/Composite ResultLogger</code></li>
+      <li><code>CsvResultFormatter</code> · <code>BenchmarkSummaryPrinter</code></li></ul></div>
+
+    <div class="pkg c-gui"><h4>gui/ <span class="pill new">신규</span></h4><p class="role">Swing 프레젠테이션 (코어 무수정)</p>
+      <ul><li><code>AlgoBenchApp</code> · <code>FlatTheme</code> · <code>FlatButton</code></li>
+      <li><code>ProblemList/Detail Panel</code></li>
+      <li><code>Submission(s)Panel</code> · <code>JavaSourceCompiler</code></li>
+      <li><code>ResultsPanel</code> · <code>BenchmarkRunner</code></li></ul></div>
+
+    <div class="pkg" style="background:var(--surface-alt)"><h4>Main</h4><p class="role">CLI 진입점 / 데모 러너</p>
+      <ul><li>인자 파싱 → 풀이 생성 → 채점 → 비교 요약</li></ul></div>
+  </div>
+</div></section>
+
+<!-- ───────── 디렉토리 ───────── -->
+<section id="tree"><div class="wrap">
+  <h2><span class="n">4</span>디렉토리 구조</h2>
+  <p class="lead">빌드 도구 없음 — 소스(<code>src</code>) + 산출물(<code>out</code>, gitignore) + 자체 빌드 스크립트.</p>
+  <div class="tree">
+<span class="d">자프 과제/</span>
+├─ <span class="d">src/algobench/</span>            <span class="cm"># 엔진 + GUI 소스 (32 .java)</span>
+│  ├─ <span class="d">domain/</span>      <span class="f">Problem · TestCase</span>
+│  ├─ <span class="d">loader/</span>      <span class="f">ProblemLoader</span>
+│  ├─ <span class="d">solution/</span>    <span class="f">Solution · JavaJarSolution · ExternalProcessSolution · ExecutionResult</span>
+│  ├─ <span class="d">compare/</span>     <span class="f">OutputComparator · Exact… · WhitespaceNormalizing…</span>
+│  ├─ <span class="d">engine/</span>      <span class="f">JudgeEngine · GradingTask</span>
+│  ├─ <span class="d">result/</span>      <span class="f">BenchmarkResult · TestCaseResult · *ResultLogger · *Formatter · SummaryPrinter</span>
+│  ├─ <span class="d new">gui/</span>         <span class="f new">AlgoBenchApp · FlatTheme · FlatButton · Problem*/Submission*/Results Panel · JavaSourceCompiler · BenchmarkRunner</span>
+│  └─ <span class="f">Main.java</span>
+├─ <span class="d">problems/</span>              <span class="cm"># 문제 세트 (자체 .txt 포맷)</span>
+│  ├─ <span class="f">a_plus_b.txt</span>        <span class="cm"># 4 케이스</span>
+│  └─ <span class="f">max_of_three.txt</span>    <span class="cm"># 4 케이스</span>
+├─ <span class="d">solutions/</span>
+│  ├─ <span class="d">java/</span>        <span class="f">CorrectSolution · WrongSolution · TimeoutSolution</span>
+│  └─ <span class="d">python/</span>      <span class="f">correct_solution.py</span>
+├─ <span class="d">out/ · out_solutions/ · dist/ · reports/</span>   <span class="cm"># 산출물 (gitignore)</span>
+├─ <span class="f">build.ps1</span>             <span class="cm"># 컴파일 + 데모/GUI 실행 (-NoRun / -Gui)</span>
+├─ <span class="f">algobench.bat</span>         <span class="cm"># 대화식 콘솔 ([1]빌드 … [7]GUI)</span>
+└─ <span class="f">plan.md · plan_claude3.md · MILESTONES.md · README.md · CLAUDE.md · ai_rec.md</span>
+  </div>
+</div></section>
+
+<!-- ───────── 핵심 클래스 ───────── -->
+<section id="classes"><div class="wrap">
+  <h2><span class="n">5</span>핵심 클래스 책임</h2>
+  <table>
+    <tr><th>클래스</th><th>패키지</th><th>책임</th><th>핵심 시그니처</th></tr>
+    <tr><td><b>ProblemLoader</b></td><td>loader</td><td>텍스트 포맷 → 도메인</td><td><code>Problem loadProblem(String path)</code></td></tr>
+    <tr><td><b>Solution</b> <span class="pill new">interface</span></td><td>solution</td><td>실행 계약(다형성)</td><td><code>ExecutionResult execute(String in, Duration timeout)</code></td></tr>
+    <tr><td><b>JavaJarSolution</b></td><td>solution</td><td>같은 JVM에서 <code>.class/.jar</code> 실행</td><td>URLClassLoader + 리플렉션 <code>main</code></td></tr>
+    <tr><td><b>ExternalProcessSolution</b></td><td>solution</td><td>외부 프로세스 실행(완전 병렬)</td><td><code>ProcessBuilder</code> + UTF-8</td></tr>
+    <tr><td><b>OutputComparator</b> <span class="pill new">interface</span></td><td>compare</td><td>채점 정책</td><td><code>boolean matches(String exp, String act)</code></td></tr>
+    <tr><td><b>JudgeEngine</b></td><td>engine</td><td>스레드풀 비동기 채점 + 순차 로깅</td><td><code>List&lt;BenchmarkResult&gt; evaluateAll(...)</code></td></tr>
+    <tr><td><b>GradingTask</b></td><td>engine</td><td>풀이 1개 × 문제 1개 채점 단위</td><td><code>implements Callable&lt;BenchmarkResult&gt;</code></td></tr>
+    <tr><td><b>BenchmarkResult</b></td><td>result</td><td>풀이별 집계(불변)</td><td><code>isAllPassed · getTotalExecutionTime · getCaseResults</code></td></tr>
+    <tr><td><b>ResultLogger</b> <span class="pill new">interface</span></td><td>result</td><td>출력 정책(Console/CSV/Composite)</td><td><code>void log(BenchmarkResult)</code></td></tr>
+  </table>
+  <div class="note blue"><b>확장점 3개</b>가 모두 인터페이스: <code>Solution</code> · <code>OutputComparator</code> · <code>ResultLogger</code>.
+  새 언어 실행기·새 채점 기준·새 출력 형식을 <b>엔진 코드 수정 없이</b> 추가 가능 (NFR-03).</div>
+</div></section>
+
+<!-- ───────── Solution 다형성 ───────── -->
+<section id="solution"><div class="wrap">
+  <h2><span class="n">6</span>Solution 다형성 — 두 실행 전략</h2>
+  <p class="lead">동일한 <code>stdin → stdout</code> 계약을 두 구현체가 서로 다른 방식으로 만족한다.</p>
+
+  <svg viewBox="0 0 1000 330" role="img" aria-label="Solution 클래스 다이어그램">
+    <defs>
+      <marker id="tri" markerWidth="16" markerHeight="14" refX="14" refY="7" orient="auto">
+        <path d="M0,0 L14,7 L0,14 Z" fill="none" stroke="#64748b" stroke-width="1.6"/>
+      </marker>
+    </defs>
+    <!-- interface -->
+    <rect x="370" y="20" width="260" height="84" rx="12" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+    <text x="500" y="44" text-anchor="middle" font-size="12" fill="#7c3aed" font-style="italic">«interface»</text>
+    <text x="500" y="66" text-anchor="middle" font-size="17" font-weight="700" font-family="Consolas,monospace">Solution</text>
+    <text x="500" y="90" text-anchor="middle" font-size="12.5" fill="#475569" font-family="Consolas,monospace">getName() · execute(input, timeout)</text>
+
+    <!-- impl left -->
+    <line x1="430" y1="104" x2="250" y2="170" stroke="#64748b" stroke-width="1.6" marker-end="url(#tri)"/>
+    <rect x="40" y="172" width="420" height="138" rx="12" fill="#fff" stroke="#7c3aed" stroke-width="2"/>
+    <text x="60" y="198" font-size="16" font-weight="700" font-family="Consolas,monospace" fill="#6d28d9">JavaJarSolution</text>
+    <text x="60" y="220" font-size="13" fill="#334155">• 같은 JVM · URLClassLoader + 리플렉션 main</text>
+    <text x="60" y="241" font-size="13" fill="#334155">• per-call 로더 → static 상태 격리</text>
+    <text x="60" y="262" font-size="13" fill="#334155">• <tspan font-family="Consolas,monospace" fill="#b91c1c">STREAM_LOCK</tspan> 으로 System.in/out 직렬화</text>
+    <text x="60" y="283" font-size="13" fill="#334155">• 데몬 스레드 + Future.get(timeout) best-effort</text>
+    <text x="60" y="303" font-size="12" fill="#94a3b8">대상: .class / .jar (semi-trusted Java)</text>
+
+    <!-- impl right -->
+    <line x1="570" y1="104" x2="750" y2="170" stroke="#64748b" stroke-width="1.6" marker-end="url(#tri)"/>
+    <rect x="540" y="172" width="420" height="138" rx="12" fill="#fff" stroke="#7c3aed" stroke-width="2"/>
+    <text x="560" y="198" font-size="16" font-weight="700" font-family="Consolas,monospace" fill="#6d28d9">ExternalProcessSolution</text>
+    <text x="560" y="220" font-size="13" fill="#334155">• 별도 OS 프로세스 · ProcessBuilder</text>
+    <text x="560" y="241" font-size="13" fill="#334155">• 완전 병렬 · UTF-8 stdin/stdout</text>
+    <text x="560" y="262" font-size="13" fill="#334155">• 타임아웃 시 <tspan font-family="Consolas,monospace" fill="#b91c1c">destroyForcibly</tspan> (손자까지)</text>
+    <text x="560" y="283" font-size="13" fill="#334155">• java 명령엔 인코딩 인자 자동 주입</text>
+    <text x="560" y="303" font-size="12" fill="#94a3b8">대상: Python · C/C++ · java 명령 등</text>
+  </svg>
+
+  <div class="grid g2" style="margin-top:6px">
+    <div class="note"><b>왜 직렬화?</b> <code>System.in/out</code>은 JVM 전역. Java 풀이를 병렬로 돌리면 출력이 섞이므로
+    스트림 교체 구간을 <code>static</code> 락으로 직렬화. <b>병렬성은 외부 프로세스 풀이에서 확보</b>.</div>
+    <div class="note green"><b>GUI 격리 선택</b> — 에디터에 적은 Java는 컴파일 후 <code>java -cp tmp Class</code>
+    외부 프로세스로 실행해, 사용자 코드의 <code>System.exit()</code>·무한루프가 GUI JVM을 죽이지 못하게 한다.</div>
+  </div>
+</div></section>
+
+<!-- ───────── 채점 시퀀스 ───────── -->
+<section id="sequence"><div class="wrap">
+  <h2><span class="n">7</span>채점 실행 흐름</h2>
+  <p class="lead">GUI는 EDT를 절대 막지 않는다 — 빌드·채점은 <code>SwingWorker</code> 백그라운드, UI 갱신만 EDT.</p>
+
+  <svg viewBox="0 0 1000 360" role="img" aria-label="채점 시퀀스 다이어그램">
+    <defs>
+      <marker id="msg" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#475569"/></marker>
+      <marker id="msgb" markerWidth="10" markerHeight="10" refX="1" refY="3" orient="auto">
+        <path d="M8,0 L0,3 L8,6 Z" fill="#16a34a"/></marker>
+    </defs>
+    <!-- lifelines -->
+    <g font-size="12.5" font-weight="700" text-anchor="middle">
+      <rect x="20"  y="14" width="150" height="34" rx="8" fill="#2563eb"/><text x="95"  y="36" fill="#fff">AlgoBenchApp (EDT)</text>
+      <rect x="220" y="14" width="160" height="34" rx="8" fill="#2563eb"/><text x="300" y="36" fill="#fff">BenchmarkRunner</text>
+      <rect x="430" y="14" width="150" height="34" rx="8" fill="#dc2626"/><text x="505" y="36" fill="#fff">JudgeEngine (pool)</text>
+      <rect x="630" y="14" width="140" height="34" rx="8" fill="#dc2626"/><text x="700" y="36" fill="#fff">GradingTask</text>
+      <rect x="820" y="14" width="160" height="34" rx="8" fill="#7c3aed"/><text x="900" y="36" fill="#fff">Solution.execute</text>
+    </g>
+    <g stroke="#cbd5e1" stroke-dasharray="4 4">
+      <line x1="95"  y1="48" x2="95"  y2="345"/><line x1="300" y1="48" x2="300" y2="345"/>
+      <line x1="505" y1="48" x2="505" y2="345"/><line x1="700" y1="48" x2="700" y2="345"/>
+      <line x1="900" y1="48" x2="900" y2="345"/>
+    </g>
+    <!-- messages -->
+    <g font-size="11.5" fill="#334155">
+      <line x1="95" y1="78" x2="298" y2="78" stroke="#475569" stroke-width="1.5" marker-end="url(#msg)"/>
+      <text x="196" y="72" text-anchor="middle">채점 ▶ (snapshot + execute)</text>
+      <text x="300" y="100" text-anchor="middle" fill="#16a34a">⤵ doInBackground (off-EDT)</text>
+
+      <line x1="300" y1="120" x2="503" y2="120" stroke="#475569" stroke-width="1.5" marker-end="url(#msg)"/>
+      <text x="402" y="114" text-anchor="middle">buildSolution → evaluateAll</text>
+
+      <line x1="505" y1="150" x2="698" y2="150" stroke="#475569" stroke-width="1.5" marker-end="url(#msg)"/>
+      <text x="600" y="144" text-anchor="middle">submit(Callable) ×N</text>
+
+      <line x1="700" y1="180" x2="898" y2="180" stroke="#475569" stroke-width="1.5" marker-end="url(#msg)"/>
+      <text x="800" y="174" text-anchor="middle">케이스별 execute(input, timeLimit)</text>
+
+      <line x1="898" y1="210" x2="702" y2="210" stroke="#16a34a" stroke-width="1.5" marker-start="url(#msgb)"/>
+      <text x="800" y="204" text-anchor="middle" fill="#15803d">ExecutionResult</text>
+
+      <line x1="698" y1="240" x2="507" y2="240" stroke="#16a34a" stroke-width="1.5" marker-start="url(#msgb)"/>
+      <text x="600" y="234" text-anchor="middle" fill="#15803d">BenchmarkResult (판정·시간)</text>
+
+      <line x1="503" y1="270" x2="302" y2="270" stroke="#16a34a" stroke-width="1.5" marker-start="url(#msgb)"/>
+      <text x="402" y="264" text-anchor="middle" fill="#15803d">List&lt;BenchmarkResult&gt; + 순차 로깅</text>
+
+      <line x1="298" y1="300" x2="97" y2="300" stroke="#16a34a" stroke-width="1.5" marker-start="url(#msgb)"/>
+      <text x="196" y="294" text-anchor="middle" fill="#15803d">done() → 결과표 갱신 (EDT)</text>
+    </g>
+    <text x="95" y="330" text-anchor="middle" font-size="11" fill="#2563eb">UI 재활성</text>
+  </svg>
+  <p class="figcap">그림 3. 풀이별 빌드 실패는 격리되어 해당 탭에만 표시되고, 나머지 채점은 계속 진행(NFR-04).</p>
+</div></section>
+
+<!-- ───────── GUI 계층 ───────── -->
+<section id="gui"><div class="wrap">
+  <h2><span class="n">8</span>Swing GUI 계층</h2>
+  <p class="lead">백준식 워크플로 — 문제 선택 → 소스 작성/첨부 → 채점 → 결과 비교. 순수 Swing(외부 LAF 없음), 코어 무수정.</p>
+
+  <svg viewBox="0 0 1000 250" role="img" aria-label="GUI 레이아웃">
+    <rect x="10" y="10" width="980" height="230" rx="12" fill="#fff" stroke="#e1e4e8" stroke-width="2"/>
+    <!-- header -->
+    <rect x="10" y="10" width="980" height="44" rx="12" fill="#eff6ff"/>
+    <text x="30" y="38" font-size="15" font-weight="800" fill="#2563eb">AlgoBench</text>
+    <rect x="700" y="20" width="150" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="775" y="37" text-anchor="middle" font-size="11" fill="#475569">채점 기준 ▾</text>
+    <rect x="862" y="20" width="108" height="24" rx="8" fill="#2563eb"/><text x="916" y="37" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">채점 ▶</text>
+    <!-- left list -->
+    <rect x="24" y="66" width="180" height="162" rx="9" fill="#fafbfc" stroke="#e1e4e8"/>
+    <text x="36" y="86" font-size="12" font-weight="700">문제</text>
+    <rect x="34" y="96" width="160" height="22" rx="5" fill="#dceafe"/><text x="44" y="111" font-size="11" font-family="Consolas">a_plus_b.txt</text>
+    <text x="44" y="135" font-size="11" font-family="Consolas" fill="#475569">max_of_three.txt</text>
+    <!-- detail -->
+    <rect x="216" y="66" width="540" height="52" rx="9" fill="#fafbfc" stroke="#e1e4e8"/>
+    <text x="230" y="88" font-size="14" font-weight="800">A+B</text>
+    <text x="230" y="108" font-size="11" fill="#6e7781">시간 2000ms · 메모리 256MB · 케이스 4개</text>
+    <!-- submissions -->
+    <rect x="216" y="128" width="540" height="100" rx="9" fill="#fafbfc" stroke="#e1e4e8"/>
+    <rect x="226" y="136" width="80" height="20" rx="5" fill="#2563eb"/><text x="266" y="150" text-anchor="middle" font-size="10" fill="#fff">풀이 1</text>
+    <rect x="310" y="136" width="80" height="20" rx="5" fill="#e5e7eb"/><text x="350" y="150" text-anchor="middle" font-size="10" fill="#475569">풀이 2</text>
+    <rect x="226" y="162" width="520" height="58" rx="6" fill="#0f172a"/>
+    <text x="238" y="180" font-size="10.5" font-family="Consolas" fill="#7dd3fc">public class <tspan fill="#fcd34d">Main</tspan> {</text>
+    <text x="238" y="196" font-size="10.5" font-family="Consolas" fill="#e2e8f0">  System.out.println(a + b);</text>
+    <text x="238" y="212" font-size="10.5" font-family="Consolas" fill="#7dd3fc">}</text>
+    <!-- results -->
+    <rect x="768" y="66" width="208" height="162" rx="9" fill="#fafbfc" stroke="#e1e4e8"/>
+    <text x="780" y="86" font-size="12" font-weight="700">결과</text>
+    <text x="780" y="108" font-size="11" font-family="Consolas">풀이 1 <tspan fill="#16a34a" font-weight="700">PASS</tspan> 4/4</text>
+    <text x="780" y="128" font-size="11" font-family="Consolas">풀이 2 <tspan fill="#dc2626" font-weight="700">FAIL</tspan> 0/4</text>
+    <line x1="780" y1="140" x2="964" y2="140" stroke="#e1e4e8"/>
+    <text x="780" y="160" font-size="10" fill="#6e7781">케이스 1 · 0.262 ms</text>
+    <text x="780" y="178" font-size="10" fill="#6e7781">─ 기대 ─ / ─ 실제 ─</text>
+  </svg>
+
+  <div class="grid g2" style="margin-top:18px">
+    <div class="card"><h3 style="margin-top:0">입력 3가지 유형</h3>
+      <ul style="margin:0;padding-left:18px">
+        <li><b>Java 에디터</b> — 작성 → <code>javax.tools</code> in-process 컴파일 → 외부 java 격리 실행</li>
+        <li><b>파일 첨부</b> — <code>.java</code>(컴파일) / <code>.class·.jar</code>(<code>JavaJarSolution</code> 직접 로드)</li>
+        <li><b>외부 명령</b> — <code>python "sol.py"</code> 등 임의 실행 명령</li>
+      </ul></div>
+    <div class="card"><h3 style="margin-top:0">컴포넌트 데이터 흐름</h3>
+      <p style="margin:0"><code>ProblemListPanel</code> → 콜백 → <code>ProblemDetailPanel</code>.
+      <code>SubmissionsPanel</code>이 EDT에서 <b>스냅샷</b>(<code>Spec</code>)을 떠
+      <code>BenchmarkRunner</code>가 백그라운드에서 빌드·채점 → <code>ResultsPanel</code>이 표시.
+      모든 스타일은 <code>FlatTheme</code> 한 곳.</p></div>
+  </div>
+</div></section>
+
+<!-- ───────── 문제 포맷 ───────── -->
+<section id="format"><div class="wrap">
+  <h2><span class="n">9</span>문제 파일 포맷</h2>
+  <p class="lead"><code>KEY: VALUE</code> 헤더 + <code>###</code> 케이스 구분 + <code>INPUT:</code>/<code>EXPECTED:</code> 블록. UTF-8.</p>
+  <div class="grid g2">
+    <div>
+      <h3 style="margin-top:0">예시 — <code>problems/a_plus_b.txt</code></h3>
+<pre><span class="k">TITLE:</span> <span class="t">A+B</span>
+<span class="k">TIME_LIMIT_MS:</span> <span class="t">2000</span>
+<span class="k">MEMORY_LIMIT_MB:</span> <span class="t">256</span>
+<span class="h">###</span>
+<span class="k">INPUT:</span>
+1 2
+<span class="k">EXPECTED:</span>
+3
+<span class="h">###</span>
+<span class="k">INPUT:</span>
+-3 10
+<span class="k">EXPECTED:</span>
+7
+<span class="c"># … 케이스 반복</span></pre>
+    </div>
+    <div>
+      <h3 style="margin-top:0">파싱 규칙</h3>
+      <table>
+        <tr><th>요소</th><th>의미</th></tr>
+        <tr><td><code>TITLE</code></td><td>문제 제목 (필수)</td></tr>
+        <tr><td><code>TIME_LIMIT_MS</code></td><td>케이스별 시간 제한(ms, 강제)</td></tr>
+        <tr><td><code>MEMORY_LIMIT_MB</code></td><td>메타데이터 전용 — <b>강제 안 함</b></td></tr>
+        <tr><td><code>###</code></td><td>케이스 구분(한 줄 전체)</td></tr>
+        <tr><td><code>INPUT:</code></td><td>stdin 주입 블록</td></tr>
+        <tr><td><code>EXPECTED:</code></td><td>기대 출력 블록 (INPUT 뒤)</td></tr>
+      </table>
+      <div class="note"><code>\r\n</code>·<code>\r</code> → <code>\n</code> 정규화, 케이스별 후행 개행 trim. 중복 키는 오류.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ───────── 판정 규칙 ───────── -->
+<section id="verdict"><div class="wrap">
+  <h2><span class="n">10</span>판정 우선순위</h2>
+  <p class="lead"><code>GradingTask</code>가 케이스마다 적용하는 순서. 위에서 먼저 걸리면 해당 판정으로 확정.</p>
+  <svg viewBox="0 0 1000 120" role="img" aria-label="판정 우선순위">
+    <defs><marker id="a2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+    <g font-size="14" font-weight="700" text-anchor="middle">
+      <rect x="20"  y="40" width="200" height="48" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+      <text x="120" y="62" fill="#b45309">① TIMEOUT</text><text x="120" y="79" font-size="10.5" font-weight="400" fill="#92400e">시간 제한 초과</text>
+      <rect x="270" y="40" width="200" height="48" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+      <text x="370" y="62" fill="#b91c1c">② RUNTIME_ERROR</text><text x="370" y="79" font-size="10.5" font-weight="400" fill="#991b1b">exitCode ≠ 0</text>
+      <rect x="520" y="40" width="200" height="48" rx="10" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+      <text x="620" y="62" fill="#c2410c">③ WRONG_ANSWER</text><text x="620" y="79" font-size="10.5" font-weight="400" fill="#9a3412">출력 불일치</text>
+      <rect x="770" y="40" width="200" height="48" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+      <text x="870" y="62" fill="#15803d">④ PASS</text><text x="870" y="79" font-size="10.5" font-weight="400" fill="#166534">모두 통과</text>
+    </g>
+    <line x1="222" y1="64" x2="266" y2="64" stroke="#94a3b8" stroke-width="2" marker-end="url(#a2)"/>
+    <line x1="472" y1="64" x2="516" y2="64" stroke="#94a3b8" stroke-width="2" marker-end="url(#a2)"/>
+    <line x1="722" y1="64" x2="766" y2="64" stroke="#94a3b8" stroke-width="2" marker-end="url(#a2)"/>
+    <text x="500" y="22" text-anchor="middle" font-size="12.5" fill="#475569">케이스 단위 예외 격리 — 한 풀이 크래시가 전체 벤치마크를 깨지 않음</text>
+  </svg>
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card" style="text-align:center"><span class="pill pass">PASS</span><p style="margin:8px 0 0;font-size:13px">정답 + 시간 내</p></div>
+    <div class="card" style="text-align:center"><span class="pill fail">FAIL</span><p style="margin:8px 0 0;font-size:13px">오답 / 런타임 에러</p></div>
+    <div class="card" style="text-align:center"><span class="pill to">TIMEOUT</span><p style="margin:8px 0 0;font-size:13px">제한 초과 (강제 종료)</p></div>
+  </div>
+</div></section>
+
+<!-- ───────── 빌드/실행 ───────── -->
+<section id="build"><div class="wrap">
+  <h2><span class="n">11</span>빌드 · 실행 (빌드 도구 없음)</h2>
+  <p class="lead"><code>javac</code>/<code>java</code> 직접. <code>build.ps1</code> 또는 <code>algobench.bat</code>이 단계를 묶는다.</p>
+  <div class="grid g2">
+    <div>
+      <h3 style="margin-top:0">컴파일 + 실행</h3>
+<pre><span class="c"># 엔진 + GUI 컴파일 → out/</span>
+javac -encoding UTF-8 -d out <span class="s">(src/**/*.java)</span>
+
+<span class="c"># 샘플 Java 풀이 → out_solutions/</span>
+javac -encoding UTF-8 -d out_solutions <span class="s">(solutions/java/*.java)</span>
+
+<span class="c"># CLI 채점</span>
+java -cp out <span class="t">algobench.Main</span> problems/a_plus_b.txt \
+     out_solutions/CorrectSolution.class \
+     <span class="s">"python solutions/python/correct_solution.py"</span></pre>
+    </div>
+    <div>
+      <h3 style="margin-top:0">GUI 실행</h3>
+<pre><span class="c"># 컴파일 후 Swing GUI</span>
+.\build.ps1 <span class="t">-Gui</span>
+
+<span class="c"># 또는 직접</span>
+java -cp out <span class="t">algobench.gui.AlgoBenchApp</span>
+
+<span class="c"># 또는 대화식 콘솔 메뉴 [7]</span>
+.\algobench.bat</pre>
+      <div class="note blue"><b>2단계 컴파일</b> — 엔진은 <code>out/</code>, 풀이 <code>.class</code>는 <code>out_solutions/</code>.
+      런타임에 <code>JavaJarSolution</code>이 <code>URLClassLoader</code>로 풀이 클래스를 로드한다.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ───────── 제약/NFR ───────── -->
+<section id="nfr"><div class="wrap">
+  <h2><span class="n">12</span>핵심 제약 · 비기능 요구</h2>
+  <div class="grid g2">
+    <div class="card">
+      <h3 style="margin-top:0">절대 제약</h3>
+      <ul style="margin:0;padding-left:18px">
+        <li><b>순수 Java SE만</b> — Maven/Gradle 없음, 런타임 외부 의존성 0</li>
+        <li>테스트 프레임워크 없음 — <code>Main</code> 데모 러너 end-to-end 검증</li>
+        <li>네트워크·DB·웹 UI·계정 관리 전부 범위 밖</li>
+        <li>메모리 제한은 메타데이터로만 보관 (강제 안 함)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">비기능 요구 (NFR)</h3>
+      <table style="box-shadow:none">
+        <tr><td><b>NFR-03</b></td><td>엔진 수정 없이 구현체 추가(확장점 3 인터페이스)</td></tr>
+        <tr><td><b>NFR-04</b></td><td>예외 격리 — 케이스 단위 catch, 계속 진행</td></tr>
+        <tr><td><b>NFR-05</b></td><td>병렬 채점 무간섭 — 불변 + 방어적 복사, 순차 로깅</td></tr>
+        <tr><td><b>NFR-06</b></td><td>사람이 읽기 좋은 콘솔 출력</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="note green" style="margin-top:18px"><b>불변성 원칙</b> — 모든 도메인/결과 객체는 생성자 주입 + getter,
+  컬렉션은 <code>List.copyOf</code> 방어적 복사. 공유 가변 상태 없음 → 병렬 채점 중 결과가 섞이지 않는다.</div>
+</div></section>
+
+<footer><div class="wrap">
+  AlgoBench — 로컬 알고리즘 벤치마크 · 순수 Java SE · CLI + Swing GUI<br>
+  설계 단일 진실 공급원: <code>plan.md</code> · <code>plan_claude3.md</code> · 단계 분해 <code>MILESTONES.md</code>
+</div></footer>
+
+</body>
+</html>

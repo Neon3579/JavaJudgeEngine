@@ -49,6 +49,46 @@ java -cp out algobench.Main problems/a_plus_b.txt `
 
 단일 "테스트" = 단일 풀이를 단일 문제로 실행하는 것. 위 명령에서 풀이 인자를 하나만 주면 된다.
 
+### JAR 빌드 + 테스트 콘솔 (`algobench.bat`)
+
+`algobench.bat`은 컴파일 → jar 패키징 → 디버깅/테스트를 묶은 대화식 콘솔이다. JDK의 `jar`만 사용(빌드 도구 없음).
+
+```bat
+algobench.bat            :: 대화식 메뉴 (더블클릭)
+algobench.bat build      :: 컴파일 + jar 패키징만 (비대화식)
+algobench.bat demo       :: 전체 데모 1회 실행 (비대화식)
+```
+
+빌드 산출물(`dist/`):
+
+| 산출물 | 종류 | Main-Class |
+|---|---|---|
+| `dist/algobench.jar` | 엔진 runnable jar | `algobench.Main` |
+| `dist/CorrectSolution.jar` 등 | 샘플 풀이 jar (`JavaJarSolution`의 `.jar` 로드 경로 시연) | 각 풀이 클래스 |
+
+jar 실행 예시:
+
+```powershell
+java -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -jar dist\algobench.jar `
+     problems\a_plus_b.txt `
+     dist\CorrectSolution.jar dist\WrongSolution.jar dist\TimeoutSolution.jar `
+     "python solutions/python/correct_solution.py"
+```
+
+메뉴 항목: `[1]` 빌드 · `[2]` 전체 데모 · `[3]` 문제 선택 실행 · `[4]` 단일 풀이 디버그(`-Dalgobench.verbose=true` — 통과 케이스 포함 전 케이스 stdin 결과 상세) · `[5]` CSV 열기 · `[6]` `.java` 직접 실행(컴파일 없이) · `[0]` 종료.
+
+#### 풀이 실행 방식 — 컴파일 필요 여부
+
+| 방식 | 인자 형태 | 사전 컴파일 | 속도 | 시간측정 |
+|---|---|---|---|---|
+| `JavaJarSolution` | `*.class` / `*.jar` | **필요** (풀이당 1회, `build`가 `solutions/java/*.java` 일괄 컴파일) | 빠름 | 정확 |
+| 소스 런처 (외부 프로세스) | `"java MySol.java"` | **불필요** | 느림(케이스마다 재컴파일) | 왜곡 |
+
+- 새 Java 풀이를 자주 바꿔가며 **빠르게 시험**: 메뉴 `[6]` 또는 `"java 경로/MySol.java"`를 인자로 직접 전달 → Java 단일파일 소스 런처가 컴파일 없이 실행.
+- **벤치마크(시간 비교)** 목적: 사전 컴파일(`.class`/`.jar`)이 정확하다. 소스 런처는 매 케이스 재컴파일이 시간에 섞인다.
+
+> 콘솔 한글을 위해 `chcp 65001`을 설정한다. 이 영향으로 **표준입력을 파일/파이프로 리다이렉트하면 `set /p`가 빈 값을 읽는 cmd 제약**이 있어, 메뉴는 키보드 입력에서만 정상 동작한다(자동 스크립트는 `build`/`demo` 인자 모드 사용). 리다이렉트 EOF 시 무한루프를 막는 가드를 두었다.
+
 ---
 
 ## 디렉토리 구조

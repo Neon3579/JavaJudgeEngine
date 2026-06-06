@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlgoBench — 인터페이스 사양 · 실행 로직 · 구조</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0e14;
+    --ink-2:#0e131c;
+    --panel:#121823;
+    --panel-2:#161d2a;
+    --line:#1f2937;
+    --line-soft:rgba(120,160,200,.10);
+    --text:#c7d1de;
+    --muted:#7c8b9e;
+    --faint:#566273;
+    --amber:#ffb454;   /* 핵심 인터페이스 / 다형성 */
+    --cyan:#39bae6;    /* 흐름 / 데이터 */
+    --green:#7fd962;   /* PASS */
+    --red:#f07178;     /* FAIL */
+    --violet:#d2a6ff;  /* 동시성 */
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans KR',system-ui,sans-serif;
+    --disp:'Syne',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:var(--sans);
+    font-weight:300;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  /* blueprint grid + grain backdrop */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(var(--line-soft) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(ellipse 120% 80% at 50% 0%,#000 30%,transparent 90%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 28px}
+
+  /* ── HERO ── */
+  header.hero{padding:96px 0 60px;position:relative}
+  .kicker{
+    font-family:var(--mono);font-size:12px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--amber);display:flex;align-items:center;gap:14px;margin-bottom:26px;
+  }
+  .kicker::before{content:"";width:42px;height:1px;background:var(--amber)}
+  h1{
+    font-family:var(--disp);font-weight:800;font-size:clamp(44px,7.5vw,92px);
+    line-height:.96;letter-spacing:-.02em;color:#f4f7fb;
+  }
+  h1 .em{color:var(--amber);position:relative}
+  .lede{
+    max-width:720px;margin-top:28px;font-size:18px;color:var(--muted);font-weight:300;
+  }
+  .lede b{color:var(--text);font-weight:500}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:34px}
+  .chip{
+    font-family:var(--mono);font-size:12px;color:var(--muted);
+    border:1px solid var(--line);border-radius:2px;padding:7px 13px;background:var(--panel);
+  }
+  .chip b{color:var(--cyan);font-weight:500}
+
+  /* ── SECTION scaffolding ── */
+  section{padding:62px 0;border-top:1px solid var(--line);position:relative}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:40px;flex-wrap:wrap}
+  .sec-no{font-family:var(--mono);font-size:13px;color:var(--faint);letter-spacing:.1em}
+  .sec-head h2{
+    font-family:var(--disp);font-weight:700;font-size:clamp(26px,3.4vw,38px);
+    color:#eef2f7;letter-spacing:-.01em;
+  }
+  .sec-head p{color:var(--muted);font-size:15px;flex-basis:100%;max-width:760px;margin-top:2px}
+
+  code,.mono{font-family:var(--mono)}
+  .sig{font-family:var(--mono);font-size:12.5px;color:var(--cyan)}
+
+  /* ── PIPELINE ── */
+  .pipe{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .stage{
+    flex:1 1 0;min-width:170px;background:var(--panel);border:1px solid var(--line);
+    border-radius:4px;padding:20px 18px;position:relative;
+    transition:transform .25s ease,border-color .25s ease,background .25s ease;
+  }
+  .stage:hover{transform:translateY(-5px);border-color:var(--cyan);background:var(--panel-2)}
+  .stage .pkg{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.12em;text-transform:uppercase}
+  .stage .step{font-family:var(--disp);font-weight:700;font-size:19px;color:#eef2f7;margin:8px 0 6px}
+  .stage .cls{font-family:var(--mono);font-size:11.5px;color:var(--cyan);line-height:1.7}
+  .stage .desc{font-size:13px;color:var(--muted);margin-top:10px}
+  .stage .num{
+    position:absolute;top:-11px;left:16px;font-family:var(--mono);font-size:11px;
+    background:var(--ink);border:1px solid var(--cyan);color:var(--cyan);
+    width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+  }
+  .arrow{
+    flex:0 0 30px;display:grid;place-items:center;color:var(--faint);font-size:22px;
+    align-self:center;
+  }
+  .arrow::after{content:"→";animation:slide 1.8s ease-in-out infinite}
+  @keyframes slide{0%,100%{transform:translateX(-3px);opacity:.4}50%{transform:translateX(3px);opacity:1}}
+  @media(max-width:760px){
+    .pipe{flex-direction:column}
+    .arrow{flex-basis:30px}
+    .arrow::after{content:"↓"}
+  }
+
+  /* ── INTERFACE / POLYMORPHISM ── */
+  .iface-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  @media(max-width:760px){.iface-grid{grid-template-columns:1fr}}
+  .iface{
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);border-radius:6px;overflow:hidden;
+    transition:border-color .25s ease;
+  }
+  .iface:hover{border-color:var(--amber)}
+  .iface .top{
+    padding:16px 18px;border-bottom:1px dashed var(--line);
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .tag{
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink);background:var(--amber);padding:3px 8px;border-radius:2px;font-weight:700;
+  }
+  .iface .top .nm{font-family:var(--mono);font-size:15px;color:var(--amber);font-weight:500}
+  .iface .method{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding:0 18px;margin-top:12px}
+  .iface .method .ret{color:var(--cyan)}
+  .impls{display:flex;flex-direction:column;gap:8px;padding:14px 18px 18px}
+  .impl{
+    display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text);
+    padding:10px 12px;background:var(--ink-2);border:1px solid var(--line);border-radius:4px;
+    border-left:2px solid var(--cyan);
+  }
+  .impl .mn{font-family:var(--mono);font-size:12.5px;color:#dbe6f1}
+  .impl small{display:block;color:var(--muted);font-size:11.5px;font-family:var(--sans);margin-top:2px}
+  .impl .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);margin-top:6px;flex:none}
+
+  /* ── EXECUTION SEQUENCE timeline ── */
+  .flow{position:relative;padding-left:34px}
+  .flow::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;
+    background:linear-gradient(var(--cyan),var(--violet));opacity:.45}
+  .node{position:relative;margin-bottom:22px}
+  .node::before{
+    content:"";position:absolute;left:-30px;top:4px;width:14px;height:14px;border-radius:50%;
+    background:var(--ink);border:2px solid var(--cyan);box-shadow:0 0 0 4px var(--ink);
+  }
+  .node h4{font-family:var(--mono);font-size:14px;color:#eef2f7;font-weight:500}
+  .node h4 .t{color:var(--amber)}
+  .node p{font-size:13.5px;color:var(--muted);margin-top:3px}
+  .node code{font-size:12px;color:var(--cyan);background:var(--panel);padding:1px 6px;border-radius:3px;border:1px solid var(--line)}
+  .node.fan::before{background:var(--amber);border-color:var(--amber)}
+  .node.merge::before{background:var(--violet);border-color:var(--violet)}
+
+  /* ── JUDGE PRIORITY ladder ── */
+  .ladder{display:flex;flex-direction:column;gap:0;max-width:760px}
+  .rung{
+    display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:16px;
+    padding:16px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left-width:4px;position:relative;
+  }
+  .rung+.rung{margin-top:-1px}
+  .rung .q{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .rung .label{font-family:var(--mono);font-size:14px;color:#eef2f7}
+  .rung .when{font-size:12.5px;color:var(--muted);font-family:var(--sans)}
+  .rung .verdict{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:2px;font-weight:700;letter-spacing:.06em}
+  .rung.t1{border-left-color:var(--violet)} .rung.t1 .verdict{background:rgba(210,166,255,.14);color:var(--violet)}
+  .rung.t2{border-left-color:var(--amber)}  .rung.t2 .verdict{background:rgba(255,180,84,.14);color:var(--amber)}
+  .rung.t3{border-left-color:var(--red)}    .rung.t3 .verdict{background:rgba(240,113,120,.14);color:var(--red)}
+  .rung.t4{border-left-color:var(--green)}  .rung.t4 .verdict{background:rgba(127,217,98,.14);color:var(--green)}
+
+  /* ── CONCURRENCY two-col ── */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:22px 22px;
+  }
+  .card.hl{border-color:var(--violet);box-shadow:inset 3px 0 0 var(--violet)}
+  .card h3{font-family:var(--disp);font-size:18px;color:#eef2f7;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+  .card h3 .bdg{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:2px;letter-spacing:.1em}
+  .bdg.lock{background:rgba(210,166,255,.16);color:var(--violet)}
+  .bdg.free{background:rgba(127,217,98,.16);color:var(--green)}
+  .card p{font-size:13.5px;color:var(--muted)}
+  .card p+p{margin-top:10px}
+  .card .k{color:var(--cyan);font-family:var(--mono);font-size:12.5px}
+  .note{margin-top:22px;font-size:13px;color:var(--muted);border-left:2px solid var(--amber);
+    padding:8px 0 8px 16px;background:linear-gradient(90deg,rgba(255,180,84,.05),transparent)}
+  .note b{color:var(--amber);font-weight:500}
+
+  /* ── ENTRY POINTS ── */
+  .entries{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:760px){.entries{grid-template-columns:1fr}}
+  .entry{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:22px}
+  .entry .who{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.14em;text-transform:uppercase}
+  .entry h3{font-family:var(--disp);font-size:21px;color:#eef2f7;margin:6px 0 4px}
+  .entry .cmd{font-family:var(--mono);font-size:12px;color:var(--green);background:var(--ink-2);
+    border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin:12px 0;overflow-x:auto;white-space:nowrap}
+  .entry ol{margin:10px 0 0 18px;font-size:13px;color:var(--muted)}
+  .entry ol li{margin-bottom:5px}
+  .entry code{font-family:var(--mono);color:var(--cyan);font-size:12px}
+
+  /* ── DATA MODEL ── */
+  .data-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+  .dclass{background:var(--panel);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  .dclass .hd{background:var(--ink-2);padding:11px 15px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:13.5px;color:var(--amber);display:flex;justify-content:space-between;align-items:center}
+  .dclass .hd .imm{font-size:9px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;border:1px solid var(--line);padding:2px 6px;border-radius:2px}
+  .dclass ul{list-style:none;padding:12px 15px;font-family:var(--mono);font-size:11.5px}
+  .dclass li{color:var(--muted);padding:2px 0;display:flex;gap:8px}
+  .dclass li .ty{color:var(--cyan);flex:none}
+
+  footer{border-top:1px solid var(--line);padding:46px 0 70px;color:var(--faint);font-size:13px}
+  footer .src{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  footer b{color:var(--amber);font-weight:500}
+
+  /* reveal on load */
+  .reveal{opacity:0;transform:translateY(18px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .d1{animation-delay:.05s}.d2{animation-delay:.12s}.d3{animation-delay:.19s}
+  .d4{animation-delay:.26s}.d5{animation-delay:.33s}.d6{animation-delay:.40s}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker reveal d1">AlgoBench · 인터페이스 사양 → 실행 로직 & 구조</div>
+    <h1 class="reveal d2">로드<span class="em">.</span>실행<span class="em">.</span>비교<span class="em">.</span>수집<span class="em">.</span>리포팅</h1>
+    <p class="lede reveal d3">
+      로컬 알고리즘 벤치마킹 엔진. 여러 풀이 코드를 동일 조건으로 실행해 <b>정답 여부 + 실행 시간</b>을 비교한다.
+      변경 가능성 높은 지점은 전부 <b>인터페이스로 추상화</b> — 엔진 수정 없이 구현체만 갈아끼운다(NFR-03).
+      이 문서는 소스의 실제 시그니처에서 추출한 실행 구조도.
+    </p>
+    <div class="chips reveal d4">
+      <span class="chip">순수 <b>Java SE</b></span>
+      <span class="chip">빌드 도구 <b>0</b> · 런타임 의존성 <b>0</b></span>
+      <span class="chip">stand-alone · <b>단일 머신</b></span>
+      <span class="chip">병렬 채점 · <b>ExecutorService</b></span>
+    </div>
+  </div>
+</header>
+
+<!-- 1. PIPELINE -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">01</span>
+      <h2>데이터 파이프라인</h2>
+      <p>각 단계는 독립 패키지. 한 방향으로 데이터가 흐른다 — 단계마다 책임이 하나씩.</p>
+    </div>
+    <div class="pipe">
+      <div class="stage reveal d1"><span class="num">1</span>
+        <div class="pkg">loader</div><div class="step">로드</div>
+        <div class="cls">ProblemLoader<br>→ Problem · TestCase</div>
+        <div class="desc">자체 텍스트 포맷 파싱(<code>KEY:VALUE</code> + <code>###</code> + INPUT/EXPECTED). 라인번호 포함 오류.</div>
+      </div>
+      <div class="arrow"></div>
+      <div class="stage reveal d2"><span class="num">2</span>
+        <div class="pkg">solution</div><div class="step">실행</div>
+        <div class="cls">Solution.execute<br>(input, timeout)</div>
+        <div class="desc">stdin 주입 → stdout/stderr/exitCode/시간 캡처. JVM 내부 or 외부 프로세스.</div>
+      </div>
+      <div class="arrow"></div>
+      <div class="stage reveal d3"><span class="num">3</span>
+        <div class="pkg">compare</div><div class="step">비교</div>
+        <div class="cls">OutputComparator<br>.matches(exp, act)</div>
+        <div class="desc">채점 정책. 기대 vs 실제 출력 판정. 구현체 교체로 기준 변경.</div>
+      </div>
+      <div class="arrow"></div>
+      <div class="stage reveal d4"><span class="num">4</span>
+        <div class="pkg">engine</div><div class="step">수집</div>
+        <div class="cls">JudgeEngine<br>+ GradingTask</div>
+        <div class="desc">스레드 풀로 비동기 채점. 케이스별 결과를 BenchmarkResult로 집계.</div>
+      </div>
+      <div class="arrow"></div>
+      <div class="stage reveal d5"><span class="num">5</span>
+        <div class="pkg">result</div><div class="step">리포팅</div>
+        <div class="cls">ResultLogger<br>+ ResultFormatter</div>
+        <div class="desc">콘솔 표 + CSV 파일. 메인 스레드에서 순차 로깅(섞임 방지).</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. POLYMORPHISM -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">02</span>
+      <h2>핵심 다형성 — 인터페이스와 구현체</h2>
+      <p>네 개의 확장점. 「계약」은 인터페이스가 고정, 「행동」은 구현체가 제공. 엔진은 인터페이스에만 의존한다.</p>
+    </div>
+    <div class="iface-grid">
+
+      <div class="iface reveal d1">
+        <div class="top"><span class="tag">interface</span><span class="nm">Solution</span></div>
+        <div class="method"><span class="ret">String</span> getName()<br><span class="ret">ExecutionResult</span> execute(String input, <span class="ret">Duration</span> timeout)</div>
+        <div class="impls">
+          <div class="impl"><span class="dot"></span><div><span class="mn">JavaJarSolution</span><small>per-call URLClassLoader로 .class/.jar 로드 → main(String[]) 리플렉션 호출 (같은 JVM)</small></div></div>
+          <div class="impl"><span class="dot"></span><div><span class="mn">ExternalProcessSolution</span><small>ProcessBuilder로 python/C++ 등 외부 실행 → 자체 OS 프로세스</small></div></div>
+        </div>
+      </div>
+
+      <div class="iface reveal d2">
+        <div class="top"><span class="tag">interface</span><span class="nm">OutputComparator</span></div>
+        <div class="method"><span class="ret">boolean</span> matches(String expected, String actual)</div>
+        <div class="impls">
+          <div class="impl"><span class="dot"></span><div><span class="mn">ExactOutputComparator</span><small>양끝 공백·trailing 개행 정규화 후 정확 비교</small></div></div>
+          <div class="impl"><span class="dot"></span><div><span class="mn">WhitespaceNormalizingComparator</span><small>토큰 단위 비교(연속 공백 축약) — NFR-03 확장 시연</small></div></div>
+        </div>
+      </div>
+
+      <div class="iface reveal d3">
+        <div class="top"><span class="tag">interface</span><span class="nm">ResultLogger</span></div>
+        <div class="method"><span class="ret">void</span> log(BenchmarkResult result) throws IOException</div>
+        <div class="impls">
+          <div class="impl"><span class="dot"></span><div><span class="mn">ConsoleResultLogger</span><small>사람이 읽는 표 형태 콘솔 출력 (NFR-06)</small></div></div>
+          <div class="impl"><span class="dot"></span><div><span class="mn">CsvResultLogger</span><small>ResultFormatter 주입 → 파일 append (synchronized)</small></div></div>
+          <div class="impl"><span class="dot"></span><div><span class="mn">CompositeResultLogger</span><small>여러 로거에 fan-out — 콘솔 + CSV 동시</small></div></div>
+        </div>
+      </div>
+
+      <div class="iface reveal d4">
+        <div class="top"><span class="tag">interface</span><span class="nm">ResultFormatter</span></div>
+        <div class="method"><span class="ret">String</span> header()<br><span class="ret">String</span> format(BenchmarkResult result)</div>
+        <div class="impls">
+          <div class="impl"><span class="dot"></span><div><span class="mn">CsvResultFormatter</span><small>solutionName,allPassed,passedCount,totalCount,timeMs,failedIdx,firstError</small></div></div>
+          <div class="impl" style="border-left-color:var(--amber)"><span class="dot" style="background:var(--amber)"></span><div><span class="mn">Callable&lt;BenchmarkResult&gt;</span><small>설계도 «CallableResult» = GradingTask가 구현 — 한 풀이를 한 문제에 채점하는 단위</small></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- 3. EXECUTION SEQUENCE -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">03</span>
+      <h2>실행 시퀀스 — JudgeEngine.evaluateAll</h2>
+      <p>제출은 병렬, 수집·로깅은 메인 스레드에서 제출 순서대로 순차. 결과가 섞이지 않는다(NFR-05).</p>
+    </div>
+    <div class="flow">
+      <div class="node reveal d1">
+        <h4><span class="t">①</span> 문제 로드 & 풀이 빌드</h4>
+        <p><code>ProblemLoader.loadProblem</code> → Problem. 인자별로 <code>.class/.jar → JavaJarSolution</code>, 그 외 → <code>ExternalProcessSolution</code>. 동명 풀이는 <code>name#2</code>로 유일화.</p>
+      </div>
+      <div class="node fan reveal d2">
+        <h4><span class="t">②</span> 비동기 제출 — evaluateAllAsync</h4>
+        <p>풀이마다 <code>new GradingTask(problem, solution, comparator)</code>를 <code>threadPool.submit()</code>. <code>List&lt;Future&lt;BenchmarkResult&gt;&gt;</code>를 <b>제출 순서</b>로 반환(블로킹 없음).</p>
+      </div>
+      <div class="node reveal d3">
+        <h4><span class="t">③</span> GradingTask.call() — 케이스 루프</h4>
+        <p>각 TestCase마다 <code>solution.execute(input, timeLimit)</code> → <code>judge()</code> → TestCaseResult. 총 실행시간 누적. <b>케이스 단위 예외 격리</b>(NFR-04): 한 케이스가 터져도 <code>errorMessage</code>에 기록하고 다음으로 진행.</p>
+      </div>
+      <div class="node merge reveal d4">
+        <h4><span class="t">④</span> 결과 수집 + 순차 로깅</h4>
+        <p>메인 스레드가 Future를 순서대로 <code>f.get()</code> → 즉시 <code>logger.log(result)</code>. 병렬 채점이지만 <b>로깅은 단일 스레드 직렬화</b>. ExecutionException은 방어적으로만(정상 경로엔 안 옴).</p>
+      </div>
+      <div class="node reveal d5">
+        <h4><span class="t">⑤</span> 비교 요약 + 셧다운</h4>
+        <p><code>BenchmarkSummaryPrinter.printComparison</code>으로 풀이 간 비교(G1). <code>shutdown()</code> → <code>awaitTermination(2s)</code> → 미종료 시 <code>shutdownNow()</code>로 지연 task 회수, JVM 종료 막지 않음(G4).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. JUDGE PRIORITY -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">04</span>
+      <h2>채점 판정 우선순위</h2>
+      <p>GradingTask.judge() — 위에서부터 먼저 걸리는 조건이 판정을 결정한다.</p>
+    </div>
+    <div class="ladder">
+      <div class="rung t1 reveal d1">
+        <span class="q">if</span>
+        <div><div class="label">isTimedOut()</div><div class="when">시간 제한 초과 — exitCode = −1</div></div>
+        <span class="verdict">TIMEOUT</span>
+      </div>
+      <div class="rung t2 reveal d2">
+        <span class="q">else if</span>
+        <div><div class="label">exitCode ≠ 0</div><div class="when">비정상 종료 — stderr 첫 줄 요약(최대 200자) 첨부</div></div>
+        <span class="verdict">RUNTIME_ERROR</span>
+      </div>
+      <div class="rung t3 reveal d3">
+        <span class="q">else if</span>
+        <div><div class="label">!matches(actual)</div><div class="when">comparator가 기대 출력과 불일치 판정</div></div>
+        <span class="verdict">WRONG_ANSWER</span>
+      </div>
+      <div class="rung t4 reveal d4">
+        <span class="q">else</span>
+        <div><div class="label">정상 종료 + 출력 일치</div><div class="when">errorMessage = "" (빈 문자열)</div></div>
+        <span class="verdict">PASS</span>
+      </div>
+    </div>
+    <div class="note reveal d5">
+      별도로 <b>미캡슐 RuntimeException</b>이 execute에서 던져지면 call()이 잡아 <code class="mono" style="color:var(--cyan)">EXCEPTION:</code> 토큰으로 기록 — 풀이 1개 크래시가 전체 벤치마크를 깨지 않는다.
+    </div>
+  </div>
+</section>
+
+<!-- 5. CONCURRENCY -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">05</span>
+      <h2>동시성 & 스레드 안전</h2>
+      <p>병렬 이득은 외부 프로세스에서. JVM 전역 스트림 충돌은 락으로 직렬화. 데이터는 전부 불변.</p>
+    </div>
+    <div class="grid2">
+      <div class="card hl reveal d1">
+        <h3>JavaJarSolution <span class="bdg lock">SERIALIZED</span></h3>
+        <p><span class="k">System.in/out/err</span>는 JVM 전역. 스트림을 교체해 출력을 캡처하므로, Java 풀이를 동시에 돌리면 출력이 섞인다.</p>
+        <p>→ 스트림 스왑 구간을 <span class="k">static STREAM_LOCK</span>으로 감싸 <b>직렬화</b>. per-call URLClassLoader로 static 상태 누수도 차단.</p>
+      </div>
+      <div class="card reveal d2">
+        <h3>ExternalProcessSolution <span class="bdg free">PARALLEL</span></h3>
+        <p>자체 OS 프로세스라 완전 병렬. stdout/stderr는 별도 reader 스레드 2개로 동시 판독(데드락 방지).</p>
+        <p>타임아웃: <span class="k">waitFor(timeout)</span> 초과 시 손자 프로세스까지 <span class="k">destroyForcibly()</span>로 확실히 종료.</p>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:22px">
+      <div class="card reveal d3">
+        <h3>타임아웃의 비대칭</h3>
+        <p><b>외부 프로세스</b> — 확실히 kill 가능.</p>
+        <p><b>Java 풀이</b> — 같은 JVM이라 강제 종료 불가. 데몬 스레드 + <span class="k">Future.get(timeout)</span> best-effort. 타임아웃 표시는 하되 데몬이라 메인 종료를 막지 않는다(한계 명시).</p>
+      </div>
+      <div class="card reveal d4">
+        <h3>불변 + 방어적 복사</h3>
+        <p>모든 도메인·결과 객체는 <span class="k">final</span> 필드 + getter. 컬렉션은 <span class="k">List.copyOf</span>.</p>
+        <p>공유 가변 상태 없음 → 병렬 채점 중 결과가 섞이지 않는다(NFR-05). 로깅만 메인 스레드 순차.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. ENTRY POINTS -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">06</span>
+      <h2>진입점 — 같은 코어, 두 표면</h2>
+      <p>CLI와 GUI 모두 동일한 ProblemLoader · Solution · JudgeEngine 코어를 호출한다. 표현 계층만 다르다.</p>
+    </div>
+    <div class="entries">
+      <div class="entry reveal d1">
+        <div class="who">CLI · 데모 러너</div>
+        <h3>algobench.Main</h3>
+        <div class="cmd">java -cp out algobench.Main &lt;problemFile&gt; &lt;solution...&gt;</div>
+        <ol>
+          <li>인자 확장자로 Solution 타입 판별</li>
+          <li><code>CompositeResultLogger</code> = 콘솔 + CSV</li>
+          <li><code>evaluateAll</code> → 비교 요약 → <code>shutdown</code></li>
+          <li><code>-Dalgobench.verbose=true</code>로 케이스 상세</li>
+        </ol>
+      </div>
+      <div class="entry reveal d2">
+        <div class="who">GUI · Swing</div>
+        <h3>algobench.gui.AlgoBenchApp</h3>
+        <div class="cmd">java -cp out algobench.gui.AlgoBenchApp</div>
+        <ol>
+          <li>문제 선택 → 소스 작성/첨부 → 채점 ▶</li>
+          <li><code>BenchmarkRunner extends SwingWorker</code></li>
+          <li>빌드·채점은 백그라운드, 결과 콜백은 EDT</li>
+          <li>풀이별 빌드 실패 격리 — 나머지는 계속(NFR-04)</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. DATA MODEL -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">07</span>
+      <h2>불변 데이터 모델</h2>
+      <p>파이프라인을 흐르는 값 객체들. 전부 생성자 주입 · getter · 방어적 복사.</p>
+    </div>
+    <div class="data-grid">
+      <div class="dclass reveal d1">
+        <div class="hd">Problem <span class="imm">immutable</span></div>
+        <ul>
+          <li><span class="ty">String</span> title</li>
+          <li><span class="ty">Duration</span> timeLimit</li>
+          <li><span class="ty">int</span> memoryLimitMb</li>
+          <li><span class="ty">List</span> testCases</li>
+        </ul>
+      </div>
+      <div class="dclass reveal d2">
+        <div class="hd">TestCase <span class="imm">immutable</span></div>
+        <ul>
+          <li><span class="ty">int</span> index</li>
+          <li><span class="ty">String</span> input</li>
+          <li><span class="ty">String</span> expectedOutput</li>
+          <li><span class="ty">bool</span> matches(act, cmp)</li>
+        </ul>
+      </div>
+      <div class="dclass reveal d3">
+        <div class="hd">ExecutionResult <span class="imm">immutable</span></div>
+        <ul>
+          <li><span class="ty">String</span> stdout</li>
+          <li><span class="ty">String</span> stderr</li>
+          <li><span class="ty">int</span> exitCode</li>
+          <li><span class="ty">Duration</span> executionTime</li>
+          <li><span class="ty">bool</span> timedOut</li>
+        </ul>
+      </div>
+      <div class="dclass reveal d4">
+        <div class="hd">BenchmarkResult <span class="imm">immutable</span></div>
+        <ul>
+          <li><span class="ty">String</span> solutionName</li>
+          <li><span class="ty">bool</span> allPassed</li>
+          <li><span class="ty">Duration</span> totalTime</li>
+          <li><span class="ty">List</span> caseResults</li>
+        </ul>
+      </div>
+      <div class="dclass reveal d5">
+        <div class="hd">TestCaseResult <span class="imm">immutable</span></div>
+        <ul>
+          <li><span class="ty">int</span> testCaseIndex</li>
+          <li><span class="ty">bool</span> passed</li>
+          <li><span class="ty">String</span> expected/actual</li>
+          <li><span class="ty">Duration</span> executionTime</li>
+          <li><span class="ty">String</span> errorMessage</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><b>AlgoBench</b> — 인터페이스 사양 기반 실행 구조 시각화</p>
+    <p class="src">소스 추출: src/algobench/{domain,loader,solution,compare,engine,result} · Main · gui &nbsp;·&nbsp; 설계 진실 공급원 plan.md / plan_claude3.md</p>
+  </div>
+</footer>
+
+</body>
+</html>

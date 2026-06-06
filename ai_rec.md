@@ -397,3 +397,92 @@
 ### 현재 상태
 - **M0~M7 전부 완료.** AlgoBench end-to-end 동작. 검증 시나리오(정답/오답/타임아웃/외부 다형성) + CSV + G1/G2 전부 확인.
 - 미반영(차후 선택): plan_claude3의 추가 확장(`CaseInsensitiveComparator`, `malformed_example.txt` 음성 파일, `SlowInterruptibleSolution`/`timeout_solution.py`, `run-demo.ps1` 분리) — M0~M7 범위 밖.
+
+---
+
+## 세션 8 — 2026-06-06 · JAR 빌드 + 디버깅/테스트 bat (Opus 4.8)
+
+### 사용자 프롬프트 #16
+> 이 프로젝트를 jar로 빌드한 뒤 디버깅/테스트 용 bat 프로그램 구현 / (커밋·푸시) / git 커밋 / 푸시
+
+### 결정 (AskUserQuestion)
+- bat 형태: **인터랙티브 메뉴**.
+- jar 범위: **엔진 + 샘플 풀이 jar** (JavaJarSolution의 `.jar` manifest Main-Class 로드 경로 시연).
+
+### AI 행동
+1. `Main.java`에 디버그 플래그 추가(엔진 무수정·additive): `-Dalgobench.verbose=true` 시 통과 케이스 포함 전 케이스 stdin 결과(기대/실제/사유) 상세 출력.
+2. `algobench.bat`(신규, UTF-8/CRLF) 작성:
+   - 대화식 메뉴 [1]빌드 [2]전체데모 [3]문제선택 [4]단일풀이 디버그(verbose) [5]CSV [0]종료.
+   - 비대화식 인자 모드 `build`/`demo`/`help`(스크립트·자동 테스트용).
+   - 빌드: `javac`(엔진 `for /r` 열거 + 따옴표 → 공백·한글 경로 안전, 샘플 `for` glob) → `jar --create --main-class`로 `dist\algobench.jar` + 샘플 풀이 jar 3개.
+   - EOF 가드(리다이렉트/파이프 무한루프 방지).
+3. **디버깅 이력(체계적 격리)**:
+   - 1차: bat이 **LF 줄끝** → cmd 라인 토막(`out`→`ut`, `java`→`va`). → **CRLF(UTF-8 no-BOM) 변환**으로 해결.
+   - 2차: 리다이렉트 입력서 메뉴 무한루프. probe로 격리 → **`chcp 65001` + 리다이렉트 stdin → `set /p` 빈값 읽는 cmd 제약** 확인(키보드 입력은 정상). → 인자 모드 + EOF 가드로 대응.
+   - 3차: javac argfile 절대경로의 공백(`자프 과제`)서 토막 + cmd `*.java` glob 미확장. → **`for` 열거 + 따옴표(Win32 argv는 공백·한글 안전) + delayed expansion**으로 해결.
+4. **검증**: `algobench.bat build` → 엔진/샘플 컴파일 + jar 4개(exit 0, 한글 클린). `algobench.bat demo` → 4풀이 시나리오 정상(Correct ★ / Wrong 케이스3 / Timeout 계속 / Python). `java -jar dist\algobench.jar`로 엔진 jar + 샘플 풀이 `.jar` 로드(manifest Main-Class) 정상. verbose 단일 풀이 전 케이스 상세 확인.
+5. 문서: `README.md` JAR+bat 섹션(산출물 표·실행 예시·chcp/set-p 제약 주의), `.gitignore`에 `dist/` 추가.
+
+### 현재 상태
+- JAR 빌드(`dist/algobench.jar` + 샘플 풀이 jar) + 디버깅/테스트 콘솔 `algobench.bat` 완료·검증.
+- `dist/`·`*.jar`은 gitignore — bat·Main 변경·문서만 커밋 대상.
+
+### 사용자 프롬프트 #17
+> 이러면 매 풀이마다 컴파일 해야되는거 아님?
+
+### AI 행동
+1. 답변: `.class`/`.jar`(JavaJarSolution)은 바이트코드라 사전 컴파일 필요(단, `build`가 `solutions/java/*.java` 일괄 컴파일 → 풀이별 개별 컴파일 아님). 컴파일 없이 돌리려면 `"java X.java"`(외부 프로세스 = Java 단일파일 소스 런처). 검증: 컴파일 없이 ALL PASS, 단 1085ms(컴파일본 9ms 대비 ~120배 — 케이스마다 재컴파일). → 탐색=소스 런처, 벤치마크=사전 컴파일.
+2. 사용자 선택(AskUserQuestion): bat에 **소스 직실행 옵션 추가**.
+3. `algobench.bat`에 메뉴 `[6] .java 직접 실행(컴파일 없이)` 추가 → `java %ENC% -jar dist\algobench.jar <문제> "java <경로>"`로 외부 프로세스 실행. 검증: `-jar` + 소스 런처 ALL PASS, `help`/구문 무결성 OK.
+4. `README.md`에 "컴파일 필요 여부" 표(JavaJarSolution vs 소스 런처) + `[6]` 메뉴 반영.
+   - 참고: PowerShell 툴에서 `-Dstdout.encoding=UTF-8` 직접 전달 시 인자 토막 아티팩트 관찰(cmd/bash는 정상) — bat은 cmd 실행이라 무관.
+
+### 현재 상태
+- `algobench.bat` [6] 소스 직실행 추가·검증. 컴파일 마찰 해소 경로 문서화.
+
+### 사용자 프롬프트 #18
+> 백준 처럼 문제를 골라 소스코드를 적거나 첨부하는 형식의 GUI를 만들어줘. 프레임워크는 Java Swing으로 모던하고 심플하게. 코어는 현재프로젝트 AlgoBench를 써.
+
+### 설계 결정 (Plan 모드 + AskUserQuestion)
+- 다중 비교(여러 풀이 한 화면 채점) / Java+외부 언어 / **에디터 Java는 외부 프로세스 격리 실행** / 커스텀 플랫 라이트 테마 — 4지선다 모두 권장안 채택.
+- 코어 무수정(NFR-03): GUI는 새 패키지 `algobench.gui`에만 추가, 채점은 기존 `ProblemLoader`/`Solution`/`JudgeEngine.evaluateAll` 호출.
+
+### AI 행동
+1. `src/algobench/gui` 9개 클래스 신규 작성(순수 Swing + `javax.tools`, 외부 의존성 0):
+   - `FlatTheme`(Nimbus+라이트 팔레트/폰트/팩토리) · `FlatButton`(둥근 플랫 버튼).
+   - `ProblemListPanel`(`problems/*.txt` 스캔·열기·`ProblemLoader` 콜백) · `ProblemDetailPanel`(제목/제한/케이스 표).
+   - `JavaSourceCompiler`(in-process 컴파일, `package`+public 클래스 파싱→FQN, 진단 수집, 임시디렉토리 shutdown-hook 정리).
+   - `SubmissionPanel`(유형 콤보=에디터/파일/명령, EDT 스냅샷 `Spec`→백그라운드 `buildSolution`) · `SubmissionsPanel`(탭 다중 풀이).
+   - `ResultsPanel`(풀이 요약표 + 케이스표 + 기대/실제/사유 상세, PASS/FAIL 색) · `BenchmarkRunner`(`SwingWorker`로 빌드+`evaluateAll`, 풀이별 빌드 실패 격리, 이름 유일화).
+   - `AlgoBenchApp`(헤더+비교기 콤보[Exact/Whitespace]+채점 버튼, split 레이아웃, 배선).
+2. 비자명 처리: EDT 금지(SwingWorker), 공백 경로 → `java -cp "<tmp>" FQN` 따옴표(코어 토크나이저 quote 그룹화 활용), 컴파일 진단 패널 표시, 첨부 `.class/.jar`만 같은 JVM(`JavaJarSolution`).
+3. 빌드 통합: `build.ps1 -Gui` 스위치 + `algobench.bat` `[7] GUI 실행`/`gui` 인자 추가.
+
+### 검증
+1. 전체 컴파일 `javac src/** -> out` exit 0.
+2. **헤드리스 스모크**(임시 `Smoke`, 코어-호출 체인 직접 호출 후 삭제): 에디터Java ALL PASS 4/4(262ms) · 파이썬 ALL PASS 4/4(117ms) · 첨부 TimeoutSolution.class FAIL 0/4 TIMEOUT(8003ms) — 3경로(컴파일→외부java / 외부 python / JavaJarSolution) 모두 정상.
+3. GUI 시작 스모크: 백그라운드 실행 후 생존 확인(생성자/배선 무크래시) → 종료.
+   - 콘솔 한글 깨짐은 PowerShell cp949 표시 한정(Swing 폰트 렌더·`build.ps1 chcp 65001`과 무관).
+
+### 현재 상태
+- AlgoBench Swing GUI(`algobench.gui`) 완료·검증. 코어 무수정, 순수 SE. 실행: `.\build.ps1 -Gui` 또는 `java -cp out algobench.gui.AlgoBenchApp`.
+
+### 사용자 프롬프트 #19
+> 폰트가 깨져
+
+### AI 행동
+1. 원인 격리: 폰트 probe(`canDisplay('가')`) — `Segoe UI`/`Consolas` = **false**(한글 글리프 없음 → tofu). `Malgun Gothic`/논리 `Monospaced`/`Dialog` = true.
+2. `FlatTheme` 폰트 상수 교체: UI → `Malgun Gothic`(없으면 논리 `Dialog` fallback), 모노 → 논리 `Monospaced`(한글 fallback 합성). `pickUiFamily()` 런타임 가용성 체크 추가.
+3. 검증: 재빌드 exit 0, GUI 시작 ALIVE. probe로 한글 렌더 가능 확정.
+
+### 사용자 프롬프트 #20
+> 현재 프로젝트의 정보와 구조를 최대한 시각자료를 이용해서 HTML 문서로 만들줘어
+
+### AI 행동
+1. 구조 수집(glob): 코어 22 + GUI 10 = **32 .java**, 7 패키지. 문제 포맷 예시 `a_plus_b.txt` 확인.
+2. `docs/algobench-overview.html` 작성 — 단일 파일 자기완결(인라인 CSS + **인라인 SVG 다이어그램**, 외부 CDN 0 = 프로젝트 순수성 유지). 섹션 12개:
+   개요(KPI) · 5단계 파이프라인 SVG · 패키지 맵 카드 · 디렉토리 트리 · 핵심 클래스 표 · Solution 다형성 클래스도 · 채점 시퀀스도(EDT/백그라운드) · GUI 레이아웃 목업 SVG · 문제 포맷 spec+예시 · 판정 우선순위(TIMEOUT→RE→WA→PASS) · 빌드/실행 · 제약·NFR.
+3. 검증: 파일 생성(39.6KB), 기본 브라우저로 렌더 확인.
+
+### 현재 상태
+- GUI 한글 폰트 수정 완료. 시각 HTML 문서 `docs/algobench-overview.html` 산출(자기완결·오프라인).

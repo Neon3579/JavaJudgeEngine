@@ -9,12 +9,14 @@
   실행:
     powershell -ExecutionPolicy Bypass -File .\build.ps1
     .\build.ps1 -NoRun        # 컴파일만 (실행 생략)
+    .\build.ps1 -Gui          # 컴파일 후 Swing GUI 실행 (CLI 데모 대신)
 
   주의: 소스가 아직 없는 마일스톤(M0)에서는 javac 단계에서 멈춘다(정상).
 #>
 
 param(
-  [switch]$NoRun
+  [switch]$NoRun,
+  [switch]$Gui
 )
 
 $ErrorActionPreference = "Stop"
@@ -56,6 +58,13 @@ if ($solSources) {
 }
 
 if ($NoRun) { Section "완료 (컴파일만)"; exit 0 }
+
+# ---- 3') GUI 실행 (Swing) ----
+if ($Gui) {
+  Section "3/3  Swing GUI 실행 (algobench.gui.AlgoBenchApp)"
+  java -cp (Join-Path $root "out") algobench.gui.AlgoBenchApp
+  exit $LASTEXITCODE
+}
 
 # ---- 3) 데모 실행 ----
 Section "3/3  데모 실행"

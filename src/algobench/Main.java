@@ -12,6 +12,7 @@ import algobench.result.ConsoleResultLogger;
 import algobench.result.CsvResultFormatter;
 import algobench.result.CsvResultLogger;
 import algobench.result.ResultLogger;
+import algobench.result.TestCaseResult;
 import algobench.solution.ExecutionResult;
 import algobench.solution.ExternalProcessSolution;
 import algobench.solution.JavaJarSolution;
@@ -67,11 +68,45 @@ public final class Main {
         try {
             List<BenchmarkResult> results = engine.evaluateAll(problem, solutions, comparator);
             new BenchmarkSummaryPrinter().printComparison(results, System.out);
+            if (isVerbose()) {
+                printVerbose(results);
+            }
             System.out.println();
             System.out.println("CSV 리포트: " + CSV_PATH);
         } finally {
             engine.shutdown();
         }
+    }
+
+    /** {@code -Dalgobench.verbose=true} 디버그 플래그. */
+    private static boolean isVerbose() {
+        return Boolean.parseBoolean(System.getProperty("algobench.verbose", "false"));
+    }
+
+    /** 디버그 모드 — 통과 케이스 포함 전 케이스의 stdin 결과 상세를 출력한다. */
+    private static void printVerbose(List<BenchmarkResult> results) {
+        System.out.println();
+        System.out.println("====== 상세 (verbose) ======");
+        for (BenchmarkResult br : results) {
+            System.out.println("풀이: " + br.getSolutionName());
+            for (TestCaseResult c : br.getCaseResults()) {
+                System.out.printf(Locale.ROOT, "  케이스 %d: %s  (%.3f ms)%n",
+                        c.getTestCaseIndex(), c.isPassed() ? "PASS" : "FAIL",
+                        c.getExecutionTime().toNanos() / 1_000_000.0);
+                System.out.println("    기대: " + inline(c.getExpectedOutput()));
+                System.out.println("    실제: " + inline(c.getActualOutput()));
+                if (!c.getErrorMessage().isEmpty()) {
+                    System.out.println("    사유: " + inline(c.getErrorMessage()));
+                }
+            }
+        }
+    }
+
+    private static String inline(String s) {
+        if (s == null) {
+            return "";
+        }
+        return s.replace("\r", "").replace("\n", "\\n");
     }
 
     private static Solution createSolution(String arg) {
