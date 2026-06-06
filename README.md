@@ -3,16 +3,16 @@
 로컬 알고리즘 벤치마킹 프로그램. 외부 온라인 저지(BOJ 등)에 의존하지 않고, 로컬 문제 세트에 여러 풀이 코드를 **동일 조건**으로 실행해 **정답 여부 + 실행 시간**을 비교하는 학습용 stand-alone 도구.
 
 - 학번/이름: **202311516 권창민**
-- 단일 진실 공급원: [`plan.md`](plan.md) (클래스 시그니처·설계 결정). 단계별 실행 계획: [`MILESTONES.md`](MILESTONES.md). 시각화: [`algobench_visual.html`](algobench_visual.html).
+- 단일 진실 공급원: [`plan.md`](plan.md) (클래스 시그니처·설계 결정). 단계별 실행 계획: [`MILESTONES.md`](MILESTONES.md). 시각화: [`algobench_visual.html`](algobench_visual.html). 보고서/문서: [`docs/`](docs/).
 
-> 현재 상태: **구현 완료 (M0~M7).** 엔진·풀이 실행·비교·리포팅 전 계층 + 샘플(문제 2 / Java 풀이 3 / Python 풀이 1) 구현. `build.ps1` end-to-end 통과.
+> 현재 상태: **구현 완료 (M0~M7) + Swing GUI.** 엔진·풀이 실행·비교·리포팅 전 계층 + 샘플(문제 2 / Java 풀이 3 / Python 풀이 1) + 데스크톱 GUI(`algobench.gui`) 구현. `build.ps1` end-to-end 통과.
 
 ---
 
 ## 핵심 제약 (Pure Java SE)
 
 - **순수 Java SE만.** 빌드 도구(Maven/Gradle) 없음, 런타임 외부 의존성 0, 테스트 프레임워크 없음. `javac`/`java` 직접 사용.
-- 네트워크·DB·웹/GUI·계정 관리는 전부 범위 밖.
+- 네트워크·DB·웹 UI(브라우저)·계정 관리는 범위 밖. 데스크톱 GUI는 Java SE 표준 **Swing**으로 제공 — 외부 의존성 0 제약 유지.
 - 검증은 JUnit이 아니라 `Main` 데모 러너 **end-to-end 실행**으로 한다.
 - 메모리 제한은 메타데이터로만 보관 — 강제하지 않는다.
 
@@ -28,6 +28,9 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 # 컴파일만
 .\build.ps1 -NoRun
+
+# 컴파일 후 Swing GUI 실행 (CLI 데모 대신)
+.\build.ps1 -Gui
 ```
 
 PowerShell ExecutionPolicy로 스크립트가 차단되면 위처럼 `-ExecutionPolicy Bypass`로 우회한다.
@@ -57,6 +60,7 @@ java -cp out algobench.Main problems/a_plus_b.txt `
 algobench.bat            :: 대화식 메뉴 (더블클릭)
 algobench.bat build      :: 컴파일 + jar 패키징만 (비대화식)
 algobench.bat demo       :: 전체 데모 1회 실행 (비대화식)
+algobench.bat gui        :: Swing GUI 실행 (비대화식)
 ```
 
 빌드 산출물(`dist/`):
@@ -75,7 +79,7 @@ java -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -jar dist\algobench.jar `
      "python solutions/python/correct_solution.py"
 ```
 
-메뉴 항목: `[1]` 빌드 · `[2]` 전체 데모 · `[3]` 문제 선택 실행 · `[4]` 단일 풀이 디버그(`-Dalgobench.verbose=true` — 통과 케이스 포함 전 케이스 stdin 결과 상세) · `[5]` CSV 열기 · `[6]` `.java` 직접 실행(컴파일 없이) · `[0]` 종료.
+메뉴 항목: `[1]` 빌드 · `[2]` 전체 데모 · `[3]` 문제 선택 실행 · `[4]` 단일 풀이 디버그(`-Dalgobench.verbose=true` — 통과 케이스 포함 전 케이스 stdin 결과 상세) · `[5]` CSV 열기 · `[6]` `.java` 직접 실행(컴파일 없이) · `[7]` GUI 실행(Swing) · `[0]` 종료.
 
 #### 풀이 실행 방식 — 컴파일 필요 여부
 
@@ -91,13 +95,32 @@ java -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -jar dist\algobench.jar `
 
 ---
 
+## Swing GUI (`algobench.gui`)
+
+백준식 워크플로 — **문제 선택 → 소스 작성/첨부 → 채점 → 결과·순위 확인** — 을 데스크톱 창으로 제공. 채점 로직은 전부 기존 코어(`ProblemLoader`/`Solution`/`JudgeEngine`)를 그대로 호출하고, GUI는 프레젠테이션 조립 + 이벤트 배선만 담당한다(코어 의존성 단방향).
+
+```powershell
+# 컴파일 후 바로 실행
+.\build.ps1 -Gui
+
+# 또는 이미 컴파일된 상태에서 직접
+java -cp out algobench.gui.AlgoBenchApp
+```
+
+콘솔에서 띄우려면 `algobench.bat gui` 또는 대화식 메뉴 `[7]`.
+
+레이아웃: 좌측 문제 목록(`ProblemListPanel`) · 우상단 문제 상세(`ProblemDetailPanel`) · 우중단 제출 패널(`SubmissionsPanel`/`SubmissionPanel` — 소스 작성 또는 `.class`/`.jar`/`.py` 첨부) · 우하단 결과(`ResultsPanel`). 헤더에서 비교기(정확 일치 / 공백 무시)를 고르고 **채점 ▶**으로 실행한다. 채점은 `BenchmarkRunner`(`SwingWorker`)가 EDT 밖 백그라운드 스레드에서 컴파일(`JavaSourceCompiler` — `javax.tools.JavaCompiler` 즉석 컴파일)과 `JudgeEngine.evaluateAll`을 돌려 UI를 막지 않는다. 테마는 `FlatTheme`/`FlatButton`(순수 Swing, 외부 LookAndFeel 없음).
+
+---
+
 ## 디렉토리 구조
 
 ```
 자프 과제/
 ├─ plan.md / MILESTONES.md / algobench_visual.html   # 설계·계획·시각화
+├─ docs/                                              # 보고서/아키텍처 HTML (+ img/)
 ├─ ai_rec.md                                          # 대화/행동 기록 (누적)
-├─ README.md  build.ps1  .gitignore
+├─ README.md  build.ps1  algobench.bat  .gitignore
 ├─ src/algobench/
 │  ├─ Main.java               # CLI 진입점 / 데모 러너
 │  ├─ domain/   { Problem, TestCase }                 # 불변 도메인
@@ -107,15 +130,19 @@ java -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -jar dist\algobench.jar `
 │  ├─ compare/  { OutputComparator«if», ExactOutputComparator,
 │  │             WhitespaceNormalizingComparator }
 │  ├─ engine/   { JudgeEngine, GradingTask }
-│  └─ result/   { BenchmarkResult, TestCaseResult, ResultLogger«if»,
-│                ConsoleResultLogger, CsvResultLogger,
-│                ResultFormatter«if», CsvResultFormatter,
-│                BenchmarkSummaryPrinter }            # G1: 풀이 간 비교 요약
+│  ├─ result/   { BenchmarkResult, TestCaseResult, ResultLogger«if»,
+│  │             ConsoleResultLogger, CsvResultLogger, CompositeResultLogger,
+│  │             ResultFormatter«if», CsvResultFormatter,
+│  │             BenchmarkSummaryPrinter }            # G1: 풀이 간 비교 요약
+│  └─ gui/      { AlgoBenchApp(진입점), ProblemListPanel, ProblemDetailPanel,
+│                SubmissionsPanel, SubmissionPanel, ResultsPanel,
+│                BenchmarkRunner, JavaSourceCompiler, FlatTheme, FlatButton }
 ├─ problems/        # 샘플 문제 파일
 ├─ solutions/java/  # 샘플 Java 풀이 (.java → 사전 컴파일)
 ├─ solutions/python/# 샘플 Python 풀이 (외부 프로세스)
 ├─ out/             # 엔진 컴파일 산출물 (.class) — gitignored
 ├─ out_solutions/   # 샘플 Java 풀이 컴파일 산출물 — gitignored
+├─ dist/            # jar 패키징 산출물 (algobench.bat build) — gitignored
 └─ reports/         # CSV 결과 출력 — gitignored
 ```
 
