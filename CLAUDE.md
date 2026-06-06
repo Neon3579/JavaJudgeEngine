@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 현재 상태
 
-설계/계획 단계. 소스 코드는 아직 없음. 구현의 단일 진실 공급원(source of truth)은 **`plan.md`** — 클래스 시그니처, 디렉토리 구조, 설계 결정이 모두 여기 있다. 구현 시작 전 반드시 `plan.md`를 읽을 것. 원본 설계도는 `202311516 권창민 프로젝트 설계도.pdf`.
+**구현 완료 (M0~M7).** `src/algobench` 전 패키지(domain/loader/compare/solution/result/engine + Main) 구현, 샘플 문제 2 + Java 풀이 3 + Python 풀이 1, `build.ps1` end-to-end 통과. 설계의 단일 진실 공급원(source of truth)은 **`plan.md`** — 클래스 시그니처·디렉토리 구조·설계 결정. 최신 수렴 보정(G1~G4: 비교 요약·소수 ms·스왑→로드 순서·shutdown 안전망)은 **`plan_claude3.md`** 참조. 단계 분해는 `MILESTONES.md`. 원본 설계도는 `202311516 권창민 프로젝트 설계도.pdf`.
+
+> 설계와 다른 결정 1건: `Solution.execute`는 `plan_claude3.md`를 따라 `execute(String input, Duration timeout)` (plan.md 원안 `execute(String input)` + 타임아웃은 호출측 전달).
 
 ## 프로젝트 개요
 

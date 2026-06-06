@@ -304,3 +304,96 @@
 ### 현재 상태
 - **M0(프로젝트 골격) 완료.** Exit Criteria 충족 — 구조 plan.md 일치, README·build.ps1·ai_rec 존재.
 - 다음: M1(도메인 + 비교기 — Problem/TestCase + OutputComparator 3종).
+
+---
+
+## 세션 7 (계속) — 2026-06-06 · M1 구현·실행 (도메인 + 비교기) (Opus 4.8)
+
+### 사용자 프롬프트 #13
+> M1 구현 실행해
+
+### AI 행동
+1. CLAUDE.md "테스트 프레임워크 없음, 검증=Main 데모 러너 E2E" 지시가 TDD 스킬보다 우선 → JUnit 미사용. 컴파일 + 임시 스크래치 검증 방식 채택.
+2. MILESTONES M1 범위대로 5개 클래스 작성(시그니처는 plan_claude3 §7.1/§7.4 기준). plan_claude3의 CaseInsensitiveComparator는 M1 목록 밖이라 스킵(나중 확장점):
+   - `compare/OutputComparator.java` «interface» — `matches(expected, actual)`, 구현체 null→"" 계약 명시.
+   - `compare/ExactOutputComparator.java` — CRLF→LF, 줄 끝 공백 제거, 끝 trailing newline 제거 후 정확 비교.
+   - `compare/WhitespaceNormalizingComparator.java` — strip + 연속 whitespace 1칸 축약(토큰 비교, NFR-03).
+   - `domain/TestCase.java` (불변) — index≥1·input/expected non-null 검증, `matches(actual, comparator)` 위임.
+   - `domain/Problem.java` (불변) — title non-blank·timeLimit>0·memoryLimitMb>0·testCases non-empty 검증, `List.copyOf` 방어적 복사.
+3. 검증:
+   - `javac -encoding UTF-8 -d out` → exit 0, .class 5개 생성.
+   - 임시 `_scratch/Verify.java`로 동작 검증 → **26 PASS / 0 FAIL** (비교기 정규화/null-safe, TestCase 위임·검증, Problem 검증·불변·방어적 복사). `-Dstdout.encoding=UTF-8`로 한글 출력 정상 확인.
+   - `_scratch` 삭제.
+
+### 현재 상태
+- **M1(도메인 + 비교기) 완료.** Exit Criteria 충족 — domain+compare 컴파일 성공, 전부 불변·방어적 복사.
+- 다음: M2(ProblemLoader + 샘플 문제 2개) 또는 M3/M4(M1 위 병행 가능).
+
+---
+
+## 세션 7 (계속) — 2026-06-06 · M2·M3·M4 구현·실행 (Opus 4.8)
+
+### 사용자 프롬프트 #14
+> /goal M2, M3, M4 구현 완료
+
+### 설계 결정 (기록)
+- **`Solution.execute` 시그니처 충돌 해소**: `plan.md`/MILESTONES M4는 `execute(String input)`(타임아웃 생성자 주입 허용), 최신 수렴본 `plan_claude3.md`는 `execute(String input, Duration timeout)`. **후자 채택** — M5 `GradingTask`가 케이스별 `execute(input, timeLimit)` 호출하고 풀이를 무상태로 유지(문제별 재생성 불필요). plan.md가 "타임아웃은 호출측이 별도 전달하거나 생성자 주입" 둘 다 허용하므로 위배 아님.
+
+### AI 행동
+1. **M2 — 로더 + 샘플 문제**
+   - `loader/ProblemLoader.java`: `Problem loadProblem(String) throws IOException`. UTF-8 읽기 → `\r\n`/`\r`→`\n` 정규화 → 헤더 파싱(`KEY: VALUE`, 필수 TITLE/TIME_LIMIT_MS/MEMORY_LIMIT_MB, 알려진 키 중복 오류·미지정 키 무시) → `###` 케이스 분리 → 케이스별 `INPUT:`/`EXPECTED:` 마커(줄 전체 정확 일치, 1회씩) 파싱 → 본문 내부 줄바꿈 보존·끝 trailing newline 제거. 오류는 `파일:라인 - 메시지`.
+   - `problems/a_plus_b.txt`(4케이스), `problems/max_of_three.txt`(4케이스).
+2. **M3 — 결과 + 로거/포매터 + 요약**
+   - `result/TestCaseResult.java`·`BenchmarkResult.java`(불변, null→"" 보정, `List.copyOf`, `getPassedCount`/`getTotalCount`).
+   - `result/ResultLogger.java`(«interface» `log(...) throws IOException`), `ConsoleResultLogger.java`(풀이별 표·**(G2) 소수 ms `toNanos()/1_000_000.0`**·실패 케이스/기대·실제 요약).
+   - `result/ResultFormatter.java`(«interface» `header()`/`format()`), `CsvResultFormatter.java`(컬럼 7종·**(G2) 소수 ms**·`failedCaseIndexes` `;`·`firstErrorMessage` 첫줄 200자·RFC 4180 escaping).
+   - `result/CsvResultLogger.java`(lazy init: 부모 디렉토리 생성→truncate→헤더 1회, `synchronized` append — run마다 fresh).
+   - **(G1) `result/BenchmarkSummaryPrinter.java`**: `printComparison(List<BenchmarkResult>, PrintStream)` — 통과 우선→총 시간 오름차순 정렬, 최속 정답 `★` 강조. 결과만 읽는 순수 함수.
+3. **M4 — 풀이 실행**
+   - `solution/ExecutionResult.java`(불변·non-null·나노 보존·`isSuccess`), `Solution.java`(«interface» `getName`/`execute(input, timeout)`).
+   - `solution/ExternalProcessSolution.java`: `ProcessBuilder`·stdin UTF-8·`PYTHONIOENCODING=utf-8`·첫 토큰 java면 `-Dstdout/stderr.encoding=UTF-8` 삽입(중복 방지)·stdout/stderr 별도 reader 스레드 동시 판독·`waitFor(timeout)` 초과 시 descendants+root `destroyForcibly`·reader grace 500ms·tokenizer(quote 묶음, unmatched 예외).
+   - `solution/JavaJarSolution.java`: per-call `URLClassLoader`(부모=platform 로더, static 상태 격리)·`STREAM_LOCK`으로 스트림 교체 직렬화·**(G3) 스왑→로드(static init 캡처)→타이머→invoke 순서**·데몬 단일 워커 `Future.get(timeout)` best-effort·`finally` 스트림 복구→`shutdownNow`→`loader.close()`. `.jar`는 manifest `Main-Class`. 생성 시 main 시그니처 1회 검증.
+4. **검증** — `javac -encoding UTF-8 -d out` 전체 컴파일 성공(에러 0). 임시 `_scratch/Verify.java` + 샘플 클래스(AddTwo/StaticInit/Boom/Loop)로 E2E 스모크: **24 PASS / 0 FAIL**.
+   - M2: title/시간/메모리/케이스수·case1 input·expected 파싱 정확, 음성(EXPECTED 누락→라인번호 포함 예외).
+   - M4: AddTwo 정상(stdout=3·success·time>0), **(G3) static-init 출력 캡처**, Boom 예외 격리(exitCode 1·stderr 스택트레이스), Loop 타임아웃(timedOut·메인 계속), ExternalProcessSolution java 자식으로 AddTwo 실행(stdout=30, **한글/숫자 정상**) — 다형성 확인.
+   - M3: ConsoleResultLogger 출력, CSV 헤더+3행, **(G2) 소수 ms `1.200`**(0 아님), **(G1) 요약 정렬 통과 우선→시간 오름차순·최속 정답 AddTwo `★`**.
+   - `_scratch` 삭제.
+
+### 현재 상태
+- **M2·M3·M4 완료.** Exit Criteria 전부 충족(컴파일·불변성·파싱 스모크·타임아웃/스트림 락·G1/G2/G3). `out/algobench/{loader,result,solution}` 산출.
+- 다음: M5(engine — GradingTask + JudgeEngine, G4). M5는 M1/M3/M4 의존 충족됨.
+
+---
+
+## 세션 7 (계속) — 2026-06-06 · M5·M6·M7 구현·E2E 검증 (Opus 4.8)
+
+### 사용자 프롬프트 #15
+> /goal M7 까지 구현해줘
+
+### AI 행동
+1. **M5 — 엔진**
+   - `engine/GradingTask.java` `implements Callable<BenchmarkResult>`: 케이스마다 `execute(input, timeLimit)` → 판정 우선순위 **TIMEOUT → RUNTIME_ERROR(exitCode≠0, stderr 첫줄 200자) → WRONG_ANSWER → 통과**. `actualOutput`엔 stdout 항상 기록, `totalExecutionTime`=케이스 합(나노 보존). 미캡슐 예외는 `EXCEPTION`으로 케이스 단위 격리 후 계속(NFR-04).
+   - `engine/JudgeEngine.java`: `newFixedThreadPool(max(1, availableProcessors()))` + `ResultLogger` DI. `evaluateAllAsync`(제출 순서 Future), `evaluateAll`(제출 순서 수집 + **메인 스레드 순차 `logger.log`** — NFR-05, IOException은 경고 후 계속), **(G4) `shutdown()` = shutdown→awaitTermination(2s)→shutdownNow**.
+2. **M6 — Main + 샘플 + 빌드**
+   - `result/CompositeResultLogger.java`(신규): 등록 순서 위임, 한 로거 실패해도 계속·예외는 `System.err` 경고만(재throw 금지).
+   - `Main.java`: 인자 `<problemFile> <solution...>`, 확장자 판별(`.class`/`.jar`→`JavaJarSolution`, else→`ExternalProcessSolution`), `UniqueNamedSolution` wrapper로 이름 유일화(`name#2`…), comparator=`ExactOutputComparator`, logger=`CompositeResultLogger[Console, Csv]`, `evaluateAll` → **(G1) `BenchmarkSummaryPrinter.printComparison`** → `finally`에서 `shutdown`.
+   - 샘플: `CorrectSolution`(A+B 정답), `WrongSolution`(절댓값 버그 → 음수 케이스 오답), `TimeoutSolution`(무한루프), `solutions/python/correct_solution.py`(외부 정답).
+   - `build.ps1`은 M0에서 3단계(엔진→샘플→데모) 골격 완성 상태 — 그대로 사용.
+3. **M7 — E2E 검증**
+   - 컴파일: 엔진 22 파일 + 샘플 Java 3 OK. Python 3.13.11 확인.
+   - 데모 `java ... algobench.Main problems/a_plus_b.txt <4풀이>`:
+     - `CorrectSolution` ALL PASS 4/4 (9.6ms), **최속 정답 `★`**.
+     - `WrongSolution` FAIL 3/4 — 케이스 3 WRONG_ANSWER(기대 7 / 실제 13).
+     - `TimeoutSolution` FAIL 0/4 — 케이스별 TIMEOUT(2000ms), 총 8001ms, **프로그램 계속 진행**(NFR-04).
+     - `correct_solution.py` ALL PASS 4/4 (외부 프로세스 다형성, 한글 정상).
+   - **(G1)** 비교 요약: 통과 우선→총 시간 오름차순 정렬, `CorrectSolution ★ 최속 정답` 정확.
+   - **(G2)** 소수 ms(9.618/3.037/8001.250 등) — 0 뭉개짐 없음.
+   - `reports/result.csv`: 헤더+4행, `failedCaseIndexes` `;` 결합, UTF-8 한글 정상.
+   - **`build.ps1` 전체 실행 통과**(엔진 22 + 샘플 3 컴파일 + 데모). 콘솔 한글은 PowerShell 호스트 캡처 시 cp949 깨짐 아티팩트 — 파일(CSV)·직접 `java -Dstdout.encoding=UTF-8` 실행은 정상.
+   - **CSV fresh**: 2회 실행 후에도 4행 유지(누적 아님 — lazy truncate 동작).
+   - **NFR-03**: comparator는 `evaluateAll(problem, solutions, comparator)` 주입점이라 엔진/Task/Solution 수정 없이 교체 가능(구조적 충족).
+4. 문서 갱신: `CLAUDE.md` 현재 상태(설계 단계 → 구현 완료 M0~M7 + execute 시그니처 결정 메모), `README.md` 상태줄.
+
+### 현재 상태
+- **M0~M7 전부 완료.** AlgoBench end-to-end 동작. 검증 시나리오(정답/오답/타임아웃/외부 다형성) + CSV + G1/G2 전부 확인.
+- 미반영(차후 선택): plan_claude3의 추가 확장(`CaseInsensitiveComparator`, `malformed_example.txt` 음성 파일, `SlowInterruptibleSolution`/`timeout_solution.py`, `run-demo.ps1` 분리) — M0~M7 범위 밖.

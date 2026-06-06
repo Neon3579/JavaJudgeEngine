@@ -5,7 +5,7 @@
 - 학번/이름: **202311516 권창민**
 - 단일 진실 공급원: [`plan.md`](plan.md) (클래스 시그니처·설계 결정). 단계별 실행 계획: [`MILESTONES.md`](MILESTONES.md). 시각화: [`algobench_visual.html`](algobench_visual.html).
 
-> 현재 상태: **M0(프로젝트 골격) 완료.** 디렉토리 트리·빌드 스크립트·문서 준비됨. 소스 구현은 M1부터.
+> 현재 상태: **구현 완료 (M0~M7).** 엔진·풀이 실행·비교·리포팅 전 계층 + 샘플(문제 2 / Java 풀이 3 / Python 풀이 1) 구현. `build.ps1` end-to-end 통과.
 
 ---
 
